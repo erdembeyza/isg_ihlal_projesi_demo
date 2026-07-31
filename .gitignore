@@ -1,0 +1,28 @@
+# --- Genel ---
+.DS_Store
+*.log
+.env
+.vscode/
+.idea/
+
+# --- Backend (Java/Maven) ---
+backend/target/
+backend/.mvn/
+backend/*.iml
+backend/HELP.md
+
+# --- Frontend (Angular/Node) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+
+# --- AI Core (Python) ---
+ai-core/venv/
+ai-core/__pycache__/
+ai-core/*.pyc
+ai-core/models/*.pt
+ai-core/test_videos/*.mp4
+ai-core/test_videos/*.avi
+
+# --- Docker ---
+docker-compose.override.yml
