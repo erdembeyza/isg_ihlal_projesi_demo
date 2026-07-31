@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: isg-ihlal-backend
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/isg_ihlal_db}
+    username: ${DB_USERNAME:isg_admin}
+    password: ${DB_PASSWORD:isg_admin_pw}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    # Sema yonetimi tamamen Flyway migration'lari (db/migration) uzerinden yapilir;
+    # Hibernate sadece entity <-> tablo eslesmesini dogrular, hicbir DDL uretmez/calistirmaz.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+server:
+  port: ${SERVER_PORT:8080}
+
+logging:
+  level:
+    org.hibernate.SQL: info
+    com.isg.ihlal.backend: debug

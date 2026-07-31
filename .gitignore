@@ -7,9 +7,13 @@
 
 # --- Backend (Java/Maven) ---
 backend/target/
-backend/.mvn/
+backend/.mvn/wrapper/maven-wrapper.jar
 backend/*.iml
 backend/HELP.md
+backend/.idea/
+backend/.classpath
+backend/.project
+backend/.settings/
 
 # --- Frontend (Angular/Node) ---
 frontend/node_modules/
