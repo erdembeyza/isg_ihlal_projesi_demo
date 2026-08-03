@@ -1,0 +1,57 @@
+@if (ihlaller().length === 0) {
+  <p class="bos-mesaj">Kayıt bulunamadı.</p>
+} @else {
+  <div class="tablo-sarmalayici">
+    <table class="ihlal-tablosu">
+      <thead>
+        <tr>
+          <th class="foto-sutunu">Foto</th>
+          <th (click)="siralaAlaninaGore('bolgeAdi')" class="siralanabilir">
+            Bölge
+            @if (siralamaAlani() === 'bolgeAdi') {
+              <span class="ok">{{ siralamaYonu() === 'asc' ? '▲' : '▼' }}</span>
+            }
+          </th>
+          <th (click)="siralaAlaninaGore('ihlalTipiAdi')" class="siralanabilir">
+            İhlal Tipi
+            @if (siralamaAlani() === 'ihlalTipiAdi') {
+              <span class="ok">{{ siralamaYonu() === 'asc' ? '▲' : '▼' }}</span>
+            }
+          </th>
+          <th (click)="siralaAlaninaGore('tespitZamani')" class="siralanabilir">
+            Tespit Zamanı
+            @if (siralamaAlani() === 'tespitZamani') {
+              <span class="ok">{{ siralamaYonu() === 'asc' ? '▲' : '▼' }}</span>
+            }
+          </th>
+          <th>Durum</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (ihlal of gorunenSatirlar(); track ihlal.id) {
+          <tr (click)="satirSecildi.emit(ihlal)" class="satir">
+            <td class="foto-sutunu">
+              <img [appAuthImg]="ihlalService.fotoTamUrl(ihlal.fotoUrl)" alt="İhlal kanıtı küçük resmi" class="kucuk-resim" />
+            </td>
+            <td>{{ ihlal.bolgeAdi }}</td>
+            <td>{{ ihlal.ihlalTipiAdi }}</td>
+            <td>{{ ihlal.tespitZamani | date: 'dd.MM.yyyy HH:mm' }}</td>
+            <td>
+              <span class="durum-etiketi" [class.hatali]="ihlal.durum === 'HATALI_TESPIT'">
+                {{ ihlal.durum === 'AKTIF' ? 'Aktif' : 'Hatalı Tespit' }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (toplamSayfa() > 1) {
+    <div class="sayfalama">
+      <button (click)="oncekiSayfa()" [disabled]="gecerliSayfa() === 0">‹ Önceki</button>
+      <span>Sayfa {{ gecerliSayfa() + 1 }} / {{ toplamSayfa() }}</span>
+      <button (click)="sonrakiSayfa()" [disabled]="gecerliSayfa() >= toplamSayfa() - 1">Sonraki ›</button>
+    </div>
+  }
+}

@@ -1,11 +1,47 @@
 <header class="panel-basligi">
   <div>
-    <h1>Formen Paneli</h1>
-    <p>Hoş geldiniz, {{ authService.currentUser()?.adSoyad }} — Bölgeniz için risk takibi</p>
+    <h1>Formen Takip Paneli</h1>
+    <p>Hoş geldiniz, {{ authService.currentUser()?.adSoyad }} — Yalnızca sorumlu olduğunuz bölge, yüzler blurlu</p>
   </div>
   <button (click)="cikisYap()">Çıkış Yap</button>
 </header>
 
 <main class="panel-icerik">
-  <p class="yer-tutucu">İhlal listesi ve haftalık özet Faz 6'da eklenecek.</p>
+  @if (hataMesaji(); as hata) {
+    <p class="genel-hata">{{ hata }}</p>
+  }
+
+  @if (yukleniyor()) {
+    <p class="yukleniyor">Veriler yükleniyor…</p>
+  } @else {
+    @if (enBelirginTrend(); as trend) {
+      <section class="trend-banner" [class.artis]="trend.yuzdeDegisim > 0" [class.azalis]="trend.yuzdeDegisim < 0">
+        <span class="ikon">{{ trend.yuzdeDegisim > 0 ? '⚠️' : '✅' }}</span>
+        <span>
+          Bu hafta <strong>{{ trend.ihlalTipiAdi }}</strong> ihlalleri geçen haftaya göre
+          <strong>%{{ trend.yuzdeDegisim > 0 ? '+' : '' }}{{ trend.yuzdeDegisim }}</strong>
+          {{ trend.yuzdeDegisim > 0 ? 'arttı' : trend.yuzdeDegisim < 0 ? 'azaldı' : 'değişmedi' }}.
+        </span>
+      </section>
+    }
+
+    <section class="kart">
+      <h2>Bölge İstatistikleri</h2>
+      <app-istatistik-grafik [istatistikler]="istatistikler()" (tipSecildi)="grafiktenTipSecildi($event)" />
+    </section>
+
+    <section class="kart">
+      <div class="liste-basligi">
+        <h2>İhlal Kayıtları ({{ filtreliIhlaller().length }})</h2>
+        <select [value]="secilenTip()" (change)="tipFiltresiDegisti($any($event.target).value)">
+          @for (tip of tipSecenekleri(); track tip) {
+            <option [value]="tip">{{ tip === TUMU ? 'Tüm Tipler' : tip }}</option>
+          }
+        </select>
+      </div>
+      <app-ihlal-listesi [ihlaller]="filtreliIhlaller()" (satirSecildi)="satirSecildi($event)" />
+    </section>
+  }
 </main>
+
+<app-ihlal-detay-modal [ihlal]="secilenIhlal()" [yetkiliMi]="false" (kapat)="modaliKapat()" />

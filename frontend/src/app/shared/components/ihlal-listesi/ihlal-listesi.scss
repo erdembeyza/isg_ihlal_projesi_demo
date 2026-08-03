@@ -1,0 +1,111 @@
+.bos-mesaj {
+  color: #6b7785;
+  text-align: center;
+  padding: 2rem;
+}
+
+.tablo-sarmalayici {
+  overflow-x: auto;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+}
+
+.ihlal-tablosu {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+
+  th,
+  td {
+    padding: 0.7rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #eef1f4;
+    white-space: nowrap;
+  }
+
+  th {
+    color: #33404d;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    background: #f6f8fa;
+  }
+
+  .siralanabilir {
+    cursor: pointer;
+    user-select: none;
+
+    .ok {
+      margin-left: 0.25rem;
+      color: #1a4a6e;
+    }
+
+    &:hover {
+      color: #1a4a6e;
+    }
+  }
+
+  .satir {
+    cursor: pointer;
+    transition: background 0.1s ease;
+
+    &:hover {
+      background: #f6f8fa;
+    }
+  }
+
+  .foto-sutunu {
+    width: 56px;
+  }
+
+  .kucuk-resim {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #e3e8ec;
+  }
+}
+
+.durum-etiketi {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #e5f6ea;
+  color: #1e7d3a;
+
+  &.hatali {
+    background: #fdecea;
+    color: #c0392b;
+  }
+}
+
+.sayfalama {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #33404d;
+
+  button {
+    padding: 0.4rem 0.85rem;
+    border: 1px solid #d3dae1;
+    border-radius: 8px;
+    background: #ffffff;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: #1a4a6e;
+    }
+  }
+}

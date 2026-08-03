@@ -1,0 +1,53 @@
+@if (ihlal(); as kayit) {
+  <div class="arka-plan" (click)="arkaPlanaTiklandi($event)">
+    <div class="modal-karti">
+      <button class="kapat-butonu" (click)="kapat.emit()" aria-label="Kapat">✕</button>
+
+      <img [appAuthImg]="ihlalService.fotoTamUrl(kayit.fotoUrl)" alt="İhlal kanıtı fotoğrafı" class="buyuk-foto" />
+
+      <div class="detay-bilgisi">
+        <div class="satir">
+          <span class="etiket">Bölge</span>
+          <span class="deger">{{ kayit.bolgeAdi }}</span>
+        </div>
+        <div class="satir">
+          <span class="etiket">İhlal Tipi</span>
+          <span class="deger">{{ kayit.ihlalTipiAdi }}</span>
+        </div>
+        <div class="satir">
+          <span class="etiket">Tespit Zamanı</span>
+          <span class="deger">{{ kayit.tespitZamani | date: 'dd.MM.yyyy HH:mm:ss' }}</span>
+        </div>
+        <div class="satir">
+          <span class="etiket">Durum</span>
+          <span class="durum-etiketi" [class.hatali]="kayit.durum === 'HATALI_TESPIT'">
+            {{ kayit.durum === 'AKTIF' ? 'Aktif' : 'Hatalı Tespit' }}
+          </span>
+        </div>
+      </div>
+
+      @if (yetkiliMi() && kayit.durum === 'AKTIF') {
+        @if (!redFormuAcik()) {
+          <button class="reddet-butonu" (click)="redFormunuAc()">Hatalı Tespit Olarak İşaretle</button>
+        } @else {
+          <div class="red-formu">
+            <label for="redNedeni">Reddetme gerekçesi (opsiyonel)</label>
+            <textarea
+              id="redNedeni"
+              rows="2"
+              [value]="redNedeni()"
+              (input)="redNedeni.set($any($event.target).value)"
+              placeholder="ör. Kişi gerçekte baretini takıyordu"
+            ></textarea>
+            <div class="red-form-butonlari">
+              <button class="iptal-butonu" (click)="redFormunuIptalEt()" [disabled]="gonderiliyor()">Vazgeç</button>
+              <button class="onayla-butonu" (click)="redOnayla()" [disabled]="gonderiliyor()">
+                {{ gonderiliyor() ? 'Gönderiliyor…' : 'Reddi Onayla' }}
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </div>
+}

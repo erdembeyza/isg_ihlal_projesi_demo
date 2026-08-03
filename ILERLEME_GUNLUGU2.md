@@ -18,9 +18,9 @@ raporlayan bir İSG (İş Sağlığı ve Güvenliği) sistemi.
 
 | Katman | Görevi | Durum |
 |---|---|---|
-| 🧠 **AI Core** (Python) | Kamera görüntüsünü YOLOv8/OpenCV ile analiz eder, ihlal tespit edince backend'e bildirir | Planlama aşamasında (Faz 7) |
+| 🧠 **AI Core** (Python) | Kamera görüntüsünü YOLOv8/OpenCV ile analiz eder, ihlal tespit edince backend'e bildirir | Sırada (Faz 7) |
 | ⚙️ **Backend** (Java/Spring Boot) | Kimlik doğrulama, ihlal kayıtlarının işlenmesi/saklanması, rol bazlı API (ISG_YONETICI / FORMEN) | ✅ Tamamlandı (Faz 2-4) — 8 endpoint de çalışıyor |
-| 🖥️ **Frontend** (Angular) | Yöneticilerin ihlalleri görüntülediği, onayladığı/reddettiği web paneli | Sırada (Faz 5-6) |
+| 🖥️ **Frontend** (Angular) | Yöneticilerin ihlalleri görüntülediği, onayladığı/reddettiği web paneli | ✅ Tamamlandı (Faz 5-6) — giriş, yönetici/formen panelleri, grafik, detay modalı |
 
 Detaylı veri modeli, DTO'lar, endpoint listesi ve bileşen hiyerarşisi için bkz.
 [`tasarim_mimari.md`](./tasarim_mimari.md).
@@ -33,7 +33,7 @@ Toplam **9 faz** (Faz 0 → Faz 8) planlanmış durumda. Her faz kendi git
 branch'inde geliştirilip `--no-ff` ile `main`'e merge ediliyor ve GitHub'a
 (`erdembeyza/isg_ihlal_projesi`) push ediliyor.
 
-**İlerleme: 5 / 9 faz tamamlandı (%56)**
+**İlerleme: 7 / 9 faz tamamlandı (%78)**
 
 | Faz | Adı | Durum | Git Branch |
 |---|---|---|---|
@@ -42,14 +42,10 @@ branch'inde geliştirilip `--no-ff` ile `main`'e merge ediliyor ve GitHub'a
 | Faz 2 | Backend İskeleti | ✅ Tamamlandı | `faz-2-backend-iskeleti` |
 | Faz 3 | Kimlik Doğrulama (JWT Security) | ✅ Tamamlandı | `faz-3-kimlik-dogrulama` |
 | Faz 4 | İhlal Servisleri (API) | ✅ Tamamlandı | `faz-4-ihlal-servisleri` |
-| Faz 5 | Frontend İskeleti (Angular) | 🔄 Sırada | — *(henüz açılmadı)* |
-| Faz 6 | Frontend Ekranları | ⬜ Beklemede | — |
-| Faz 7 | AI Core (YOLOv8/OpenCV) | ⬜ Beklemede | — |
+| Faz 5 | Frontend İskeleti (Angular) | ✅ Tamamlandı | `faz-5-frontend-iskeleti` |
+| Faz 6 | Frontend Ekranları | ✅ Tamamlandı | `faz-6-frontend-ekranlari` |
+| Faz 7 | AI Core (YOLOv8/OpenCV) | 🔄 Sırada | — *(henüz açılmadı)* |
 | Faz 8 | Entegrasyon ve Kapanış | ⬜ Beklemede | — |
-
-> Faz 5-6 numaralandırması, proje planında Angular frontend çalışmasının iki
-> alt aşamaya (iskelet + ekranlar) bölünmüş olabileceğini yansıtır; kesin
-> alt-faz sınırları Faz 5 başlangıcında netleştirilecektir.
 
 ---
 
@@ -69,12 +65,14 @@ branch'inde geliştirilip `--no-ff` ile `main`'e merge ediliyor ve GitHub'a
 | Build aracı | Maven (Maven Wrapper — `mvnw`/`mvnw.cmd`) |
 | Script/otomasyon | PowerShell (`scripts/flyway-migrate.ps1`) |
 | Dosya depolama | Yerel dosya sistemi (`backend/uploads/`), `FileStorageService` üzerinden — ileride S3 gibi bir alternatife geçilebilir |
+| Frontend çatısı | Angular 22 (standalone component mimarisi), Node.js 24.18.1, npm 11.16.0 |
+| Frontend state/HTTP | Angular signals, `HttpClient` + fonksiyonel `HttpInterceptor` (JWT) |
+| Grafik | Chart.js 4 + ng2-charts 10 (pasta grafik, istatistik ekranı) |
 
 ### ⬜ Planlanan (henüz kurulmadı)
 
 | Katman | Teknoloji |
 |---|---|
-| Frontend çatısı | Angular (CLI), Node.js/nvm — Faz 5-6 |
 | AI / Bilgisayarlı Görü | Python 3.12, YOLOv8 (ultralytics), OpenCV — Faz 7 |
 | AI Core yardımcı kütüphaneler | requests, numpy, python-dotenv — Faz 7 |
 
@@ -89,9 +87,12 @@ branch'inde geliştirilip `--no-ff` ile `main`'e merge ediliyor ve GitHub'a
   "password authentication failed" hatası veriyordu. Kullanıcı onayıyla bu
   servis durdurulup Disabled yapıldı; sonrasında backend Docker'daki
   Postgres'e (`isg_postgres`) sorunsuz bağlandı.
-- ⚠️ **Node.js / Angular CLI eksik:** Ortamda `node`, `nvm` ve `ng` komutları
-  PATH üzerinden hâlâ bulunamıyor. Faz 5-6 (Angular frontend) başlamadan
-  önce kurulup PATH'e eklenmesi gerekiyor.
+- 🖼️ **Foto erişimi JWT ile korunuyor:** İhlal kanıt fotoğrafları
+  (`/uploads/**`) de tüm diğer `/api/**` uçları gibi geçerli bir JWT
+  gerektirir; düz bir `<img src="...">` bu isteğe token ekleyemediği için
+  401 alırdı. Frontend'de bunu çözmek için `AuthImgDirective` yazıldı —
+  fotoğrafı `HttpClient` (interceptor otomatik token ekler) ile blob olarak
+  çekip `URL.createObjectURL` ile `<img>`'e atıyor.
 - 🔑 **Dev/test giriş bilgileri** (yalnızca geliştirme ortamı için, **üretimde
   kullanılmamalı**):
 
@@ -113,16 +114,16 @@ branch'inde geliştirilip `--no-ff` ile `main`'e merge ediliyor ve GitHub'a
 
 ---
 
-## 5) Backend Tamamlandı — Sıradaki Adım: Faz 5-6 (Frontend, Angular)
+## 5) Backend + Frontend Tamamlandı — Sıradaki Adım: Faz 7 (AI Core)
 
-Backend artık **8 endpoint'in tamamıyla** (login + 7 ihlal/kullanıcı/bölge
-servisi) uçtan uca test edilmiş ve çalışır durumda — rol bazlı erişim
-kontrolü (ISG_YONETICI / FORMEN) dahil. Sırada:
+Backend (**8 endpoint**, rol bazlı erişim kontrolü dahil) ve Angular frontend
+(giriş, yönetici paneli, formen paneli, istatistik grafiği, ihlal listesi,
+detay modalı, reddetme aksiyonu, kullanıcı oluşturma formu) uçtan uca test
+edilmiş ve çalışır durumda. Sırada Faz 7 (AI Core, Python/YOLOv8/OpenCV):
 
-- Node.js (22/24) ve Angular CLI kurulumu — ortamda hâlâ PATH'te değil, bu
-  faza başlamadan önce halledilmesi gerekiyor.
-- `ng new` ile Angular projesinin oluşturulması.
-- Giriş ekranı, yönetici paneli (tüm fabrika + istatistik grafiği + reddetme
-  aksiyonu), formen paneli (kendi bölgesi + blurlu foto) bileşenleri.
-- Backend'deki endpoint'lere karşılık gelen Angular servisleri (`HttpClient`
-  + JWT'yi `Authorization` header'ına ekleyen bir `HttpInterceptor`).
+- Canlı kamera/RTSP akışının okunması, kişi + KDD (baret/yelek/gözlük)
+  nesnelerinin YOLOv8 Nano ile tespiti.
+- İhlal anında kare (snapshot) alınması ve yüz bölgesinin
+  `cv2.GaussianBlur` ile bulanıklaştırılması (orijinal + blurlu kopya).
+- Görsellerin base64'e çevrilip `POST /api/ihlaller`'a gönderilmesi.
+- Kaggle test videolarıyla offline test/kalibrasyon modu.
