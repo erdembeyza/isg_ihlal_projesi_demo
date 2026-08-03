@@ -8,8 +8,8 @@ bkz. proje planı (Faz 0 → Faz 8).
 **Son güncelleme:** 3 Ağustos 2026
 **Şu ana kadar tamamlanan fazlar:** Faz 0 (Ortam Kurulumu), Faz 1 (Veritabanı),
 Faz 2 (Backend İskeleti), Faz 3 (Kimlik Doğrulama), Faz 4 (İhlal Servisleri),
-Faz 5 (Frontend İskeleti), Faz 6 (Frontend Ekranları)
-**Sıradaki faz:** Faz 7 (AI Core — YOLOv8/OpenCV)
+Faz 5 (Frontend İskeleti), Faz 6 (Frontend Ekranları), Faz 7 (AI Core)
+**Sıradaki faz:** Faz 8 (Entegrasyon ve Kapanış)
 
 ---
 
@@ -40,7 +40,8 @@ ayrı izlenebilir kalıyor, `main` her zaman derlenebilir/çalışır durumda tu
 | `faz-3-kimlik-dogrulama` | merge edildi | JJWT, `SecurityConfig`, `JwtService`, `JwtAuthenticationFilter`, `AuthController` |
 | `faz-4-ihlal-servisleri` | merge edildi | `IhlalController`/`Service`, `KullaniciController`/`Service`, `BolgeController`, `FileStorageService`, `WebConfig` |
 | `faz-5-frontend-iskeleti` | merge edildi | Angular 22 projesi, `AuthService`, `jwtInterceptor`, guard'lar, `LoginComponent`, dashboard iskeletleri, backend CORS ayarı |
-| `faz-6-frontend-ekranlari` | geliştiriliyor (bu günlük güncellemesiyle commit edilecek) | `IhlalListesiComponent`, `IstatistikGrafikComponent`, `IhlalDetayModalComponent`, dolu dashboard içerikleri, `AuthImgDirective`, ikinci demo bölge (`V3__ikinci_bolge.sql`) |
+| `faz-6-frontend-ekranlari` | merge edildi | `IhlalListesiComponent`, `IstatistikGrafikComponent`, `IhlalDetayModalComponent`, dolu dashboard içerikleri, `AuthImgDirective`, ikinci demo bölge (`V3__ikinci_bolge.sql`) |
+| `faz-7-ai-core` | geliştiriliyor (bu günlük güncellemesiyle commit edilecek) | `ai-core/src/` (config, auth_client, backend_client, face_blur, ppe_detector, pipeline, main), test videosu üretme aracı, AI Core servis hesabı (`V4__ai_core_servis_hesabi.sql`) |
 
 ---
 
@@ -490,12 +491,107 @@ tarayıcı otomasyon ajanıyla uçtan uca test edildi:
 
 ---
 
-## Sırada Ne Var — Faz 7 (AI Core, YOLOv8/OpenCV)
+## Faz 7 — AI Core (YOLOv8/OpenCV)
 
-- Python/OpenCV/YOLOv8 Nano ile canlı kamera/RTSP akışının okunması.
-- Kişi, baret, yelek, gözlük nesnelerinin tespiti ve ihlal (nesne eksikliği)
-  anında kare (snapshot) alınması.
-- Yüz bölgesi tespiti + `cv2.GaussianBlur` ile blurlu kopya üretimi.
-- Orijinal/blurlu görsellerin base64'e çevrilip `IhlalKayitRequestDTO` olarak
-  `POST /api/ihlaller`'a gönderilmesi.
-- Kaggle test videolarıyla offline test/kalibrasyon modu.
+### Ne yapıldı
+
+- **Backend: AI Core servis hesabı** — `POST /api/ihlaller` özel bir rol
+  kısıtı taşımasa da (bkz. Faz 4), herhangi bir kimlik doğrulanmış istemci
+  gerektirdiği için `V4__ai_core_servis_hesabi.sql` migration'ı ile
+  `ai_core_servis` (rol: `ISG_YONETICI`, `bolge_id`: NULL) adında dev/test
+  amaçlı bir servis hesabı eklendi. AI Core, backend'e karşı normal bir
+  kullanıcı gibi `/api/auth/login` ile giriş yapıp JWT alıyor.
+- **`ai-core/src/config.py`** — `.env` dosyasını okuyup tip dönüşümü/yol
+  çözümlemesi yapan merkezi ayar modülü (backend adresi, servis hesabı
+  bilgileri, video kaynağı, YOLO model yolu, güven eşiği, bölge ID,
+  ihlal tipi ID eşlemesi, cooldown süresi, frame atlama).
+- **`ai-core/src/auth_client.py`** — `BackendOturumu`: login olup JWT'yi
+  önbellekte tutan, süresi dolmadan (50 dk eşik, backend süresi 60 dk)
+  kendiliğinden yenileyen istemci.
+- **`ai-core/src/backend_client.py`** — kareyi JPEG+base64'e çevirip
+  `IhlalKayitRequestDTO` formatında `POST /api/ihlaller`'a gönderen istemci;
+  401 alırsa token'ı zorla yenileyip bir kez daha dener.
+- **`ai-core/src/face_blur.py`** — KVKK gereği yüz bulanıklaştırma: OpenCV'nin
+  paketle birlikte gelen Haar Cascade yüz dedektörüyle kişi kutusu içinde
+  yüz aranır, bulunursa `cv2.GaussianBlur` ile sansürlenir; yüz hiç
+  bulunamazsa güvenlik ağı olarak kişi kutusunun üst çeyreği blurlanır
+  (KVKK riskini sıfırlamak için).
+- **`ai-core/src/ppe_detector.py`** — YOLOv8 modelini yükleyip sınıf
+  isimlerini (ör. `NO-Hardhat`, `NO-Safety Vest`, `NO-Goggles` — yaygın
+  açık kaynak "Construction Site Safety" veri kümesi kalıpları) ihlal
+  tipine (`BARET`/`YELEK`/`GOZLUK`) çeviren dedektör. `models/ppe_yolov8n.pt`
+  bulunamazsa (henüz gerçek bir PPE modeli eğitilip yerleştirilmediyse)
+  ultralytics'in COCO ön-eğitilmiş `yolov8n.pt` modeline düşüp yalnızca
+  `person` sınıfıyla çalışan **DEMO_MODU**'na geçer; bu modda tespit edilen
+  her kişi, boru hattının (yakalama→blur→backend POST) uçtan uca
+  doğrulanabilmesi için tüm ihlal tipleriyle işaretlenir ve bu açıkça
+  `WARNING` olarak loglanır (gerçek üretim tespiti değildir).
+- **`ai-core/src/pipeline.py` / `main.py`** — video kaynağını (RTSP ya da
+  dosya) okuyan, `FRAME_ATLAMA` kadar karede bir YOLO çalıştıran, ihlal tipi
+  başına `DETECTION_COOLDOWN_SANIYE` (varsayılan 30 sn) ile tekrar
+  bildirimini (spam) engelleyen ana döngü. CLI bayrakları: `--source`,
+  `--dry-run` (backend'e göndermez, `--debug-output` ile kareleri diske
+  yazar), `--show` (tespit kutularını pencerede gösterir), `--loop` (video
+  dosyasını başa sararak canlı akışı simüle eder), `--verbose`.
+- **`ai-core/tools/test_video_uret.py`** — Kaggle hesabı/interneti
+  gerektirmeden, `ultralytics` paketiyle gelen (içinde gerçek insan olan)
+  örnek görselden küçük bir test videosu üreten yardımcı script; gerçek
+  kullanımda Kaggle'daki açık kaynak İSG videolarıyla değiştirilmesi
+  gerektiği `README.md`'de not edildi.
+- **`ai-core/README.md`** — kurulum, çalıştırma, DEMO_MODU'nun ne anlama
+  geldiği ve gerçek bir PPE modeline nasıl geçileceği anlatıldı.
+- `.gitignore`'a `ai-core/debug_output/` ve kök dizine inebilecek
+  `ai-core/*.pt` (ör. `yolov8n.pt` otomatik indirmesi) eklendi.
+
+### Neden bu şekilde tasarlandı (DEMO_MODU)
+
+Gerçek bir baret/yelek/gözlük-eksikliği YOLO modelini bu ortamda sıfırdan
+eğitmek (etiketli veri seti + GPU + saatler süren eğitim) faz kapsamının
+dışında; bunun yerine kod, gerçek bir PPE modeli `models/ppe_yolov8n.pt`'e
+yerleştirildiğinde (sınıf isimleri `NO-Hardhat` vb. olduğu sürece) hiçbir
+kod değişikliği gerekmeden doğrudan çalışacak şekilde tasarlandı. Modelin
+henüz mevcut olmadığı durumda ise boru hattının geri kalanının (kişi
+tespiti → yüz blur → base64 → JWT ile backend'e POST → veritabanına yazma)
+**gerçekten** çalıştığı, sahte/mock veri değil gerçek YOLOv8 çıkarımıyla
+uçtan uca doğrulandı (bkz. Test bölümü).
+
+### Test / Doğrulama
+
+1. `ai-core/venv` içinde `pip install -r requirements.txt` ile `ultralytics`
+   8.3.40, `torch` 2.13, `opencv-python` 4.10 vb. bağımlılıkların kurulu
+   olduğu doğrulandı.
+2. `tools/test_video_uret.py` ile 30 karelik bir demo videosu üretildi
+   (ultralytics'in örnek `bus.jpg` görseli — içinde gerçek insanlar var).
+3. **Kuru çalıştırma (`--dry-run --debug-output`):** DEMO_MODU'na düşüldüğü,
+   kişinin tespit edildiği, cooldown'ın aynı ihlal tipini tekrar
+   bildirmediği (30 karede yalnızca 1'er BARET/YELEK/GOZLUK) ve üretilen
+   blurlu karede yüzün gerçekten bulanıklaştırıldığı (orijinal/blur kare
+   çiftleri görsel olarak karşılaştırılarak) doğrulandı.
+4. **Uçtan uca (gerçek backend):** `mvnw spring-boot:run` ile backend
+   başlatılıp Flyway'in `V4` migration'ını uyguladığı (`Current version of
+   schema "public": 4`) doğrulandı; `ai_core_servis` hesabıyla
+   `/api/auth/login` başarılı oldu; `python -m src.main` (dry-run OLMADAN)
+   çalıştırılıp 3 ihlal (`id=18` BARET, `id=19` YELEK, `id=20` GOZLUK)
+   gerçekten `POST /api/ihlaller` ile backend'e gönderildi ve
+   veritabanına yazıldı; `admin` hesabıyla `GET /api/ihlaller` çağrılarak
+   bu 3 kaydın `Yuksek Firin-1` bölgesinde, `AKTIF` durumda listelendiği
+   teyit edildi.
+
+### Kullanılan araçlar / komutlar
+
+- **Python 3.12 + venv** — bağımlılık kurulumu (`pip install -r requirements.txt`)
+- **`python -m src.main`** — AI Core CLI (`--dry-run`, `--debug-output`, `--verbose`)
+- **Maven Wrapper** (`mvnw.cmd spring-boot:run`) — backend'in `V4` migration'ı
+  uygulayarak başlatılması
+- **PowerShell** (`Invoke-RestMethod`) — servis hesabı girişi ve
+  `GET /api/ihlaller` ile doğrulama
+- **Docker** (`docker ps`) — PostgreSQL/pgAdmin konteynerlerinin ayakta
+  olduğunun kontrolü
+
+---
+
+## Sırada Ne Var — Faz 8 (Entegrasyon ve Kapanış)
+
+- Üç katmanın (AI Core, Backend, Frontend) birlikte, gerçek/uzun süreli bir
+  akışla uçtan uca son bir kez doğrulanması.
+- Proje genelinde kalan dokümantasyon/temizlik işleri ve kapanış notları.

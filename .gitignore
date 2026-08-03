@@ -24,10 +24,13 @@ frontend/.angular/
 # --- AI Core (Python) ---
 ai-core/venv/
 ai-core/__pycache__/
+ai-core/src/__pycache__/
 ai-core/*.pyc
+ai-core/*.pt
 ai-core/models/*.pt
 ai-core/test_videos/*.mp4
 ai-core/test_videos/*.avi
+ai-core/debug_output/
 
 # --- Docker ---
 docker-compose.override.yml
