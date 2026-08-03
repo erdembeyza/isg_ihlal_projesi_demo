@@ -7,8 +7,9 @@ bkz. proje planı (Faz 0 → Faz 8).
 
 **Son güncelleme:** 3 Ağustos 2026
 **Şu ana kadar tamamlanan fazlar:** Faz 0 (Ortam Kurulumu), Faz 1 (Veritabanı),
-Faz 2 (Backend İskeleti), Faz 3 (Kimlik Doğrulama), Faz 4 (İhlal Servisleri)
-**Sıradaki faz:** Faz 5-6 (Frontend — Angular)
+Faz 2 (Backend İskeleti), Faz 3 (Kimlik Doğrulama), Faz 4 (İhlal Servisleri),
+Faz 5 (Frontend İskeleti), Faz 6 (Frontend Ekranları)
+**Sıradaki faz:** Faz 7 (AI Core — YOLOv8/OpenCV)
 
 ---
 
@@ -37,7 +38,9 @@ ayrı izlenebilir kalıyor, `main` her zaman derlenebilir/çalışır durumda tu
 | `faz-1-veritabani` | merge edildi | Flyway migration'ları (`V1__init.sql`, `V2__seed.sql`), yardımcı script |
 | `faz-2-backend-iskeleti` | merge edildi | Spring Boot 4.1.0 projesi, 5 Entity + 5 Repository |
 | `faz-3-kimlik-dogrulama` | merge edildi | JJWT, `SecurityConfig`, `JwtService`, `JwtAuthenticationFilter`, `AuthController` |
-| `faz-4-ihlal-servisleri` | geliştiriliyor (bu günlük güncellemesiyle commit edilecek) | `IhlalController`/`Service`, `KullaniciController`/`Service`, `BolgeController`, `FileStorageService`, `WebConfig` |
+| `faz-4-ihlal-servisleri` | merge edildi | `IhlalController`/`Service`, `KullaniciController`/`Service`, `BolgeController`, `FileStorageService`, `WebConfig` |
+| `faz-5-frontend-iskeleti` | merge edildi | Angular 22 projesi, `AuthService`, `jwtInterceptor`, guard'lar, `LoginComponent`, dashboard iskeletleri, backend CORS ayarı |
+| `faz-6-frontend-ekranlari` | geliştiriliyor (bu günlük güncellemesiyle commit edilecek) | `IhlalListesiComponent`, `IstatistikGrafikComponent`, `IhlalDetayModalComponent`, dolu dashboard içerikleri, `AuthImgDirective`, ikinci demo bölge (`V3__ikinci_bolge.sql`) |
 
 ---
 
@@ -362,12 +365,137 @@ denemesi (403 ✅) → admin'in yeni formen oluşturması (201 ✅).
 
 ---
 
-## Sırada Ne Var — Faz 5-6 (Frontend, Angular)
+## Faz 5 — Frontend İskeleti (Angular)
 
-- Node.js (22/24) ve Angular CLI kurulumu — ortamda hâlâ PATH'te değil,
-  bu faza başlamadan önce halledilmesi gerekiyor.
-- `ng new` ile Angular projesinin oluşturulması.
-- Giriş ekranı, yönetici paneli (tüm fabrika + istatistik grafiği + reddetme
-  aksiyonu), formen paneli (kendi bölgesi + blurlu foto) bileşenleri.
-- Backend'deki 8 endpoint'e karşılık gelen Angular servisleri (`HttpClient`
-  + JWT'nin `Authorization` header'ına eklenmesi için bir `HttpInterceptor`).
+### Ne yapıldı
+
+- Ortamda Node.js 24.18.1, npm 11.16.0 ve Angular CLI 22.1.2'nin zaten kurulu
+  olduğu tespit edildi (Faz 0'da "eksik" olarak not edilmişti, bu engel
+  ortadan kalkmıştı).
+- Yer tutucu `frontend/README.md` kenara alınıp `ng new frontend --routing
+  --style=scss --skip-git` ile gerçek Angular 22 projesi (standalone
+  component mimarisi) oluşturuldu.
+- **Environment ayarları:** `environment.ts` (üretim, bağıl `/api` yolu) ve
+  `environment.development.ts` (`http://localhost:8080/api`), `angular.json`
+  içinde `development` konfigürasyonu için `fileReplacements` eklendi.
+- **Backend DTO'larına karşılık gelen TS modelleri:** `auth.model.ts`,
+  `bolge.model.ts`, `ihlal.model.ts`, `kullanici.model.ts` (`core/models/`).
+- **`AuthService`** — signal tabanlı oturum yönetimi; `LoginResponseDTO`'yu
+  `localStorage`'da saklar, `isLoggedIn`/`rol`/`isYonetici`/`isFormen`
+  computed signal'leri sunar.
+- **`jwtInterceptor`** — fonksiyonel HTTP interceptor; her isteğe
+  `Authorization: Bearer <token>` ekler (`/auth/login` hariç), 401 yanıtında
+  otomatik oturumu kapatıp giriş ekranına yönlendirir.
+- **Guard'lar** — `authGuard` (genel oturum kontrolü), `adminGuard` (yalnızca
+  ISG_YONETICI), `foremanGuard` (yalnızca FORMEN).
+- **`LoginComponent`** — Reactive Forms ile kullanıcı adı/şifre doğrulaması,
+  `/api/auth/login` çağrısı, role göre yönlendirme, hatalı girişte uyarı.
+- **`AdminDashboard`/`ForemanDashboard`** — Faz 6'da doldurulacak iskelet
+  bileşenler (yalnızca hoş geldin başlığı + çıkış butonu).
+- **Routing** (`app.routes.ts`) — `/giris`, `/yonetici` (adminGuard), `/formen`
+  (foremanGuard), `''` ve `**` → `/giris`.
+- **Backend'de CORS ayarı** (`SecurityConfig.java`) — Angular'ın
+  `localhost:4200`'den `localhost:8080`'e istek atabilmesi için
+  `CorsConfigurationSource` bean'i eklendi.
+
+### Doğrulama
+
+Bir tarayıcı otomasyon ajanıyla 10 senaryo uçtan uca test edildi (kök
+yönlendirme, giriş yapmadan `/yonetici`'ye erişim engeli, boş form
+doğrulaması, admin girişi + doğru panele yönlendirme, formen'in
+`/yonetici`'ye erişememesi, çıkış yapma, formen girişi + doğru panele
+yönlendirme, admin'in `/formen`'e erişememesi, tekrar çıkış, yanlış şifreyle
+giriş denemesi). Hepsi başarılı, CORS hatası dahil hiçbir hata gözlenmedi.
+
+---
+
+## Faz 6 — Frontend Ekranları
+
+### Ne yapıldı
+
+Tasarım dokümanındaki (`tasarim_mimari.md`) COMPONENT-2 → COMPONENT-6 arası
+tüm bileşenler dolduruldu ve dashboard'lar gerçek veriyle çalışır hale
+getirildi:
+
+- **`IhlalService`/`BolgeService`/`KullaniciService`** (`core/services/`) —
+  `/api/ihlaller`, `/api/bolgeler`, `/api/kullanicilar` uçlarına karşılık
+  gelen `HttpClient` çağrıları. `IhlalService.fotoTamUrl()`, backend'in
+  döndürdüğü bağıl `/uploads/...` yolunu `environment.apiUrl`'den türetilen
+  origin ile tam URL'e çevirir.
+- **`AuthImgDirective`** (`core/directives/`) — ihlal kanıt fotoğrafları
+  `/uploads/**` altından JWT ile korunur (bkz. `WebConfig`/`SecurityConfig`),
+  düz bir `<img src="...">` bu isteği kimliksiz atacağından 401 alır. Bu
+  direktif fotoğrafı `HttpClient` üzerinden (interceptor otomatik token
+  ekler) blob olarak çekip `URL.createObjectURL` ile `img`'e atar,
+  `ngOnDestroy`'da object URL'i serbest bırakır.
+- **`IhlalListesiComponent`** (`shared/components/`) — ihlal tablosu;
+  bölge/tip/tarihe göre sıralama (tıklanabilir başlıklar), sayfalama (8
+  satır/sayfa), satır tıklamasını `satirSecildi` output'uyla dışarı bildirir.
+  Filtreleme sorumluluğu üst dashboard bileşenlerinde.
+- **`IstatistikGrafikComponent`** — `ng2-charts`/`chart.js` ile ihlal
+  tiplerinin pasta grafiği + son 7 gün toplam adedi + en belirgin 5
+  bölge/tip kırılımının yüzdesel değişim listesi (artış kırmızı, azalış
+  yeşil). Grafik dilimine tıklamak `tipSecildi` output'u ile üst bileşene
+  filtre isteği gönderir.
+- **`IhlalDetayModalComponent`** — seçilen ihlalin büyük fotoğrafı
+  (`AuthImgDirective`), bölge/tip/zaman/durum bilgisi; `yetkiliMi=true` ve
+  durum `AKTIF` ise "Hatalı Tespit Olarak İşaretle" butonu + opsiyonel
+  gerekçe formu. Gerçek API çağrısını yapmaz, `reddet` output'uyla üst
+  bileşene bildirir (state/servis sorumluluğu dashboard'larda).
+- **`AdminDashboard`** — tüm fabrika verisini çeker, bölge + ihlal tipi
+  dropdown filtreleri, istatistik grafiği, ihlal listesi, detay modalı,
+  reddetme aksiyonu (başarılı reddetmede liste+istatistik yeniden yüklenir).
+  Ayrıca `KullaniciRequestDTO`/`ResponseDTO` modellerini kullanan bir "Yeni
+  Kullanıcı" formu eklendi (yalnızca ISG_YONETICI'ye görünür, FORMEN rolü
+  seçilirse bölge seçimi zorunlu kılınır, 409 kullanıcı adı çakışması
+  kullanıcıya mesaj olarak gösterilir).
+- **`ForemanDashboard`** — backend zaten JWT'deki `bolgeId`'ye göre kapsamı
+  kısıtladığından ekstra bölge filtresi yok; yalnızca tip filtresi, istatistik
+  grafiği ve en belirgin yüzde değişime göre üstte bir "trend" bilgi kutusu
+  (ör. "Bu hafta GÖZLÜK ihlalleri geçen haftaya göre %100 arttı") gösterir.
+  Reddet butonu hiçbir yerde render edilmez.
+- **`app.config.ts`** — `provideCharts(withDefaultRegisterables())` eklendi.
+- **Backend:** `V3__ikinci_bolge.sql` migration'ı eklendi (V1/V2'yi
+  değiştirmeden, ikinci bir test bölgesi — "Sicak Haddehane-2" — ekler),
+  böylece admin panelindeki bölge filtresi anlamlı test edilebiliyor.
+
+### Doğrulama
+
+Backend ve Angular dev sunucuları ayağa kaldırıldı, admin token'ı ile API
+üzerinden 13 adet demo ihlal kaydı (1x1 piksel test görseli, karışık
+bölge/tip/tarih) oluşturuldu (kullanıcı onayı alınarak). Ardından bir
+tarayıcı otomasyon ajanıyla uçtan uca test edildi:
+
+- Admin girişi → pasta grafiği + ihlal listesi + thumbnail fotoğrafların
+  (JWT korumalı `/uploads` ucu üzerinden, `AuthImgDirective` ile) sorunsuz
+  yüklendiği doğrulandı.
+- Bölge filtresi ("Sicak Haddehane-2") ve tip filtresi (ör. "BARET") listeyi
+  ve istatistik grafiğini doğru şekilde daralttı.
+- Bir kayda tıklanıp detay modalı açıldı, büyük fotoğraf yüklendi, "Hatalı
+  Tespit Olarak İşaretle" → gerekçe girildi → "Reddi Onayla" ile kayıt
+  `HATALI_TESPIT`'e döndü, liste ve istatistik otomatik yenilendi.
+- "+ Yeni Kullanıcı" formu açılıp alanları doğrulandı (submit edilmedi).
+- Çıkış yapılıp formen ile giriş yapıldı: yalnızca "Yuksek Firin-1"
+  bölgesine ait kayıtlar listelendi, reddet butonu hiçbir yerde
+  görünmüyor, trend bilgi kutusu doğru hesaplanmış yüzdeyle gösterildi.
+- Tarayıcı konsolunda CORS/401/403/500 veya JS hatası gözlenmedi.
+
+### Kullanılan araçlar / komutlar
+
+- **`ng build`/`ng serve`** — derleme ve geliştirme sunucusu doğrulaması
+- **Maven Wrapper** (`mvnw.cmd spring-boot:run`) — backend'in V3 migration'ı
+  uygulayarak yeniden başlatılması
+- **PowerShell** (`Invoke-RestMethod`) — demo ihlal verisi üretimi
+- **Tarayıcı otomasyon ajanı** — 8 senaryoluk uçtan uca test
+
+---
+
+## Sırada Ne Var — Faz 7 (AI Core, YOLOv8/OpenCV)
+
+- Python/OpenCV/YOLOv8 Nano ile canlı kamera/RTSP akışının okunması.
+- Kişi, baret, yelek, gözlük nesnelerinin tespiti ve ihlal (nesne eksikliği)
+  anında kare (snapshot) alınması.
+- Yüz bölgesi tespiti + `cv2.GaussianBlur` ile blurlu kopya üretimi.
+- Orijinal/blurlu görsellerin base64'e çevrilip `IhlalKayitRequestDTO` olarak
+  `POST /api/ihlaller`'a gönderilmesi.
+- Kaggle test videolarıyla offline test/kalibrasyon modu.

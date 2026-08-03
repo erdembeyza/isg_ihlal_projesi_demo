@@ -1,0 +1,70 @@
+.bos-mesaj {
+  color: #6b7785;
+  text-align: center;
+  padding: 2rem;
+}
+
+.grafik-alani {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+}
+
+.pasta-kapsayici {
+  position: relative;
+  width: 240px;
+  height: 240px;
+  flex-shrink: 0;
+}
+
+.trend-alani {
+  flex: 1;
+  min-width: 220px;
+
+  .toplam {
+    margin: 0 0 0.75rem;
+    color: #33404d;
+    font-size: 0.9rem;
+  }
+}
+
+.trend-listesi {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #eef1f4;
+  }
+
+  .etiket {
+    color: #33404d;
+  }
+
+  .deger {
+    font-weight: 700;
+    white-space: nowrap;
+    color: #6b7785;
+
+    &.artis {
+      color: #c0392b;
+    }
+
+    &.azalis {
+      color: #1e7d3a;
+    }
+  }
+}

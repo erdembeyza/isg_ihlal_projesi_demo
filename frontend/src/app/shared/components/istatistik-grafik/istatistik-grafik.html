@@ -1,0 +1,30 @@
+@if (istatistikler().length === 0) {
+  <p class="bos-mesaj">Bu görünüm için henüz istatistik verisi yok.</p>
+} @else {
+  <div class="grafik-alani">
+    <div class="pasta-kapsayici">
+      <canvas
+        baseChart
+        [type]="'pie'"
+        [data]="chartData()"
+        [options]="chartOptions"
+        (chartClick)="onChartClick($event)"
+      ></canvas>
+    </div>
+
+    <div class="trend-alani">
+      <p class="toplam">Son 7 günde toplam <strong>{{ toplamIhlalAdedi() }}</strong> aktif ihlal</p>
+      <ul class="trend-listesi">
+        @for (satir of trendSatirlari(); track satir.bolgeAdi + satir.ihlalTipiAdi) {
+          <li>
+            <span class="etiket">{{ satir.bolgeAdi }} — {{ satir.ihlalTipiAdi }}</span>
+            <span class="deger" [class.artis]="satir.yuzdeDegisim > 0" [class.azalis]="satir.yuzdeDegisim < 0">
+              {{ satir.yuzdeDegisim > 0 ? '▲' : satir.yuzdeDegisim < 0 ? '▼' : '—' }}
+              %{{ satir.yuzdeMutlak | number: '1.0-1' }} ({{ satir.toplamAdet }} adet)
+            </span>
+          </li>
+        }
+      </ul>
+    </div>
+  </div>
+}

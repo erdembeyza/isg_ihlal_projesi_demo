@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 2rem;
-  background: #1a4a6e;
+  background: #0f2740;
   color: white;
 
   h1 {
@@ -13,7 +13,7 @@
 
   p {
     margin: 0.15rem 0 0;
-    color: #cfe0ee;
+    color: #b9c6d4;
     font-size: 0.85rem;
   }
 
@@ -30,8 +30,69 @@
 
 .panel-icerik {
   padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
 }
 
-.yer-tutucu {
+.kart {
+  h2 {
+    margin: 0 0 1rem;
+    font-size: 1.05rem;
+    color: #0f2740;
+  }
+}
+
+.yukleniyor,
+.genel-hata {
+  text-align: center;
   color: #6b7785;
+}
+
+.genel-hata {
+  color: #c0392b;
+}
+
+.liste-basligi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  select {
+    padding: 0.45rem 0.6rem;
+    border: 1px solid #d3dae1;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    background: white;
+  }
+}
+
+.trend-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  background: #eef1f4;
+  color: #33404d;
+  font-size: 0.9rem;
+
+  .ikon {
+    font-size: 1.2rem;
+  }
+
+  &.artis {
+    background: #fdecea;
+    color: #c0392b;
+  }
+
+  &.azalis {
+    background: #e5f6ea;
+    color: #1e7d3a;
+  }
 }
