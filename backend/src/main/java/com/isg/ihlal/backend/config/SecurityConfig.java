@@ -14,6 +14,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 /**
  * MODUL-3 (tasarim_mimari.md): Spring Security'nin varsayilan (formLogin +
@@ -52,6 +57,7 @@ public class SecurityConfig {
                 // REST API + JWT: CSRF korumasi cerez tabanli session'lar icin anlamlidir,
                 // burada session olmadigi (STATELESS) icin gerek yok.
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
@@ -74,5 +80,25 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Angular gelistirme sunucusu (ng serve, localhost:4200) farkli bir origin
+     * oldugu icin tarayici CORS ile korur; bu yapilandirma olmadan Angular'dan
+     * atilan istekler tarayici tarafinda bloklanir. Uretimde Angular build
+     * ciktisi ayni origin'den (backend'in statik dosya sunumu ya da reverse
+     * proxy ile) servis edilirse bu ayara gerek kalmaz.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 }
