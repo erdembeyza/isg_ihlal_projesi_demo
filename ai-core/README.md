@@ -39,30 +39,27 @@ loglar), `--debug-output <klasör>` (kuru çalıştırmada kareleri diske
 kaydeder), `--show` (tespit kutularını pencerede gösterir), `--loop`
 (video dosyasını başa sararak tekrar oynatır), `--verbose`.
 
-## PPE modeli hakkında önemli not (DEMO_MODU)
+## PPE modeli
 
-Sistem, `.env`'deki `YOLO_MODEL_PATH` (varsayılan `models/ppe_yolov8n.pt`)
-konumunda **baret/yelek/gözlük eksikliğini gerçekten sınıflandırabilen**,
-ayrıca eğitilmiş bir YOLOv8 ağırlık dosyası bekler. Böyle bir model henüz
-mevcut değilse (`models/` klasörü boşsa), servis ultralytics'in genel amaçlı
-COCO modeline (`yolov8n.pt`, ilk çalıştırmada otomatik indirilir) düşer ve
-**DEMO_MODU**'na geçer:
+`.env` içindeki `YOLO_MODEL_PATH` (varsayılan `models/ppe_yolov8n.pt`)
+Construction Site Safety (Roboflow) ile fine-tune edilmiş YOLOv8n ağırlığını
+bekler. Bu dosya `.gitignore`'dadır; Colab'da üretilen `best.pt` buraya
+kopyalanır.
 
-- Yalnızca `person` (kişi) sınıfı tespit edilir.
-- Boru hattının (yakalama → kişi tespiti → yüz blur → backend'e POST)
-  uçtan uca çalıştığını doğrulamak için, tespit edilen her kişi test amaçlı
-  olarak **her üç ihlal tipiyle de** (BARET, YELEK, GÖZLÜK) işaretlenir.
-- Bu **gerçek bir ihlal tespiti değildir**; yalnızca geliştirme/kalibrasyon
-  amaçlıdır ve başlangıçta konsola açıkça `WARNING` olarak loglanır.
+Beklenen ihlal sınıfları (`src/ppe_detector.py` → `SINIF_TO_IHLAL_TIPI`):
 
-Gerçek PPE tespiti için önerilen yol: bu alanda yaygın kullanılan açık
-kaynaklı "Construction Site Safety" (Roboflow/Kaggle) veri kümesiyle bir
-YOLOv8n modelini fine-tune edip `models/ppe_yolov8n.pt` olarak
-yerleştirmek. `src/ppe_detector.py` içindeki `SINIF_TO_IHLAL_TIPI`
-sözlüğü, bu veri kümesinin `NO-Hardhat` / `NO-Safety Vest` / `NO-Goggles`
-gibi sınıf isimlerini otomatik olarak ihlal tipine çevirecek şekilde
-hazırlanmıştır; farklı bir veri kümesi kullanılırsa bu sözlük
-güncellenmelidir.
+| Model sınıfı | Sistem ihlal tipi |
+|---|---|
+| `NO-Hardhat` / `NO-Helmet` | BARET |
+| `NO-Safety Vest` / `NO-Vest` | YELEK |
+| `NO-Goggles` / `NO-Glasses` | GOZLUK |
+
+Mevcut Construction Site Safety eğitiminde **`NO-Goggles` yoktur**; GOZLUK
+tespiti için gözlük etiketli bir setle ek fine-tune gerekir. Kişi sınıfı
+hem `person` (COCO) hem `Person` (Roboflow) olarak tanınır.
+
+Dosya yoksa sistem COCO `yolov8n.pt`'e düşüp **DEMO_MODU**'na geçer (yalnızca
+geliştirme: her kişi tüm ihlal tipleriyle işaretlenir — gerçek tespit değil).
 
 ## Test videosu üretme (Kaggle olmadan hızlı kalibrasyon)
 

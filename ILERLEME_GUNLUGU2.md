@@ -18,12 +18,12 @@ raporlayan bir İSG (İş Sağlığı ve Güvenliği) sistemi.
 
 | Katman | Görevi | Durum |
 |---|---|---|
-| 🧠 **AI Core** (Python) | Kamera görüntüsünü YOLOv8/OpenCV ile analiz eder, ihlal tespit edince backend'e bildirir | ✅ Tamamlandı (Faz 7) — uçtan uca test edildi (bkz. not) |
+| 🧠 **AI Core** (Python) | Kamera görüntüsünü YOLOv8/OpenCV ile analiz eder, ihlal tespit edince backend'e bildirir | ✅ Tamamlandı (Faz 7–8) — gerçek PPE modeli ile doğrulandı |
 | ⚙️ **Backend** (Java/Spring Boot) | Kimlik doğrulama, ihlal kayıtlarının işlenmesi/saklanması, rol bazlı API (ISG_YONETICI / FORMEN) | ✅ Tamamlandı (Faz 2-4) — 8 endpoint de çalışıyor |
 | 🖥️ **Frontend** (Angular) | Yöneticilerin ihlalleri görüntülediği, onayladığı/reddettiği web paneli | ✅ Tamamlandı (Faz 5-6) — giriş, yönetici/formen panelleri, grafik, detay modalı |
 
 Detaylı veri modeli, DTO'lar, endpoint listesi ve bileşen hiyerarşisi için bkz.
-[`tasarim_mimari.md`](./tasarim_mimari.md).
+[`tasarim_mimari.md`](./tasarim_mimari.md). Hızlı başlatma: [`README.md`](./README.md).
 
 ---
 
@@ -33,7 +33,7 @@ Toplam **9 faz** (Faz 0 → Faz 8) planlanmış durumda. Her faz kendi git
 branch'inde geliştirilip `--no-ff` ile `main`'e merge ediliyor ve GitHub'a
 (`erdembeyza/isg_ihlal_projesi`) push ediliyor.
 
-**İlerleme: 8 / 9 faz tamamlandı (%89)**
+**İlerleme: 9 / 9 faz tamamlandı (%100)**
 
 | Faz | Adı | Durum | Git Branch |
 |---|---|---|---|
@@ -45,7 +45,7 @@ branch'inde geliştirilip `--no-ff` ile `main`'e merge ediliyor ve GitHub'a
 | Faz 5 | Frontend İskeleti (Angular) | ✅ Tamamlandı | `faz-5-frontend-iskeleti` |
 | Faz 6 | Frontend Ekranları | ✅ Tamamlandı | `faz-6-frontend-ekranlari` |
 | Faz 7 | AI Core (YOLOv8/OpenCV) | ✅ Tamamlandı | `faz-7-ai-core` |
-| Faz 8 | Entegrasyon ve Kapanış | 🔄 Sırada | — *(henüz açılmadı)* |
+| Faz 8 | Entegrasyon ve Kapanış | ✅ Tamamlandı | `faz-8-entegrasyon-kapanis` |
 
 ---
 
@@ -59,17 +59,18 @@ branch'inde geliştirilip `--no-ff` ile `main`'e merge ediliyor ve GitHub'a
 | Backend bağımlılıkları | Spring Web, Spring Data JPA, Spring Security, Validation, Flyway |
 | Kimlik doğrulama | JJWT 0.13.0 (JWT üretimi/doğrulaması), BCrypt |
 | Veritabanı | PostgreSQL 16 (Alpine imajı, Docker) |
-| DB migration | Flyway (10-alpine Docker imajı ile standalone çalıştırıldı; Faz 2 sonrası Spring Boot içinde otomatik) |
+| DB migration | Flyway (Spring Boot içinde otomatik; V1–V4) |
 | Konteynerleştirme | Docker Desktop, docker-compose (postgres + pgAdmin servisleri) |
 | DB yönetim arayüzü | pgAdmin 4 |
 | Build aracı | Maven (Maven Wrapper — `mvnw`/`mvnw.cmd`) |
-| Script/otomasyon | PowerShell (`scripts/flyway-migrate.ps1`) |
-| Dosya depolama | Yerel dosya sistemi (`backend/uploads/`), `FileStorageService` üzerinden — ileride S3 gibi bir alternatife geçilebilir |
+| Script/otomasyon | PowerShell (`scripts/flyway-migrate.ps1`, `scripts/e2e-smoke.ps1`) |
+| Dosya depolama | Yerel dosya sistemi (`backend/uploads/`), `FileStorageService` üzerinden |
 | Frontend çatısı | Angular 22 (standalone component mimarisi), Node.js 24.18.1, npm 11.16.0 |
 | Frontend state/HTTP | Angular signals, `HttpClient` + fonksiyonel `HttpInterceptor` (JWT) |
 | Grafik | Chart.js 4 + ng2-charts 10 (pasta grafik, istatistik ekranı) |
 | AI / Bilgisayarlı Görü | Python 3.12, YOLOv8 Nano (ultralytics 8.3.40), OpenCV 4.10, PyTorch 2.13 |
 | AI Core yardımcı kütüphaneler | requests, numpy, python-dotenv |
+| PPE modeli | Construction Site Safety (Roboflow) fine-tune → `ai-core/models/ppe_yolov8n.pt` (git dışı) |
 
 ---
 
@@ -77,72 +78,35 @@ branch'inde geliştirilip `--no-ff` ile `main`'e merge ediliyor ve GitHub'a
 
 - ⚠️ **Port 5432 çakışması (çözüldü):** Makinede Docker'dan bağımsız, native
   kurulu bir **PostgreSQL 18 Windows servisi** (`postgresql-x64-18`) 5432
-  portunu işgal ediyordu; backend `isg_admin` kullanıcısıyla bağlanmaya
-  çalıştığında yanlışlıkla bu native servise yönleniyor ve
-  "password authentication failed" hatası veriyordu. Kullanıcı onayıyla bu
-  servis durdurulup Disabled yapıldı; sonrasında backend Docker'daki
-  Postgres'e (`isg_postgres`) sorunsuz bağlandı.
-- 🖼️ **Foto erişimi JWT ile korunuyor:** İhlal kanıt fotoğrafları
-  (`/uploads/**`) de tüm diğer `/api/**` uçları gibi geçerli bir JWT
-  gerektirir; düz bir `<img src="...">` bu isteğe token ekleyemediği için
-  401 alırdı. Frontend'de bunu çözmek için `AuthImgDirective` yazıldı —
-  fotoğrafı `HttpClient` (interceptor otomatik token ekler) ile blob olarak
-  çekip `URL.createObjectURL` ile `<img>`'e atıyor.
-- 🔑 **Dev/test giriş bilgileri** (yalnızca geliştirme ortamı için, **üretimde
-  kullanılmamalı**):
+  portunu işgal ediyordu; kullanıcı onayıyla Disabled yapıldı.
+- 🖼️ **Foto erişimi JWT ile korunuyor:** Frontend `AuthImgDirective` ile
+  blob olarak çeker.
+- 🔑 **Dev/test giriş bilgileri** (yalnızca geliştirme; **üretimde
+  değiştirilmeli**):
 
   | Kullanıcı adı | Şifre | Rol | Bölge |
   |---|---|---|---|
   | `admin` | `Admin123!` | ISG_YONETICI | Tüm fabrika |
   | `formen1` | `Formen123!` | FORMEN | Yuksek Firin-1 |
-  | `ai_core_servis` | `AiCore123!` | ISG_YONETICI | Tüm fabrika (yalnızca `POST /api/ihlaller` için kullanılır) |
+  | `ai_core_servis` | `AiCore123!` | ISG_YONETICI | Servis hesabı (`POST /api/ihlaller`) |
 
-- 🗂️ Şema yönetimi tamamen Flyway'e devredildi (`spring.jpa.hibernate.ddl-auto=validate`);
-  Hibernate şemayı değiştirmez, yalnızca migration'larla oluşturulan şemaya
-  Entity'lerin uyup uymadığını doğrular.
-- 🐞 **Faz 4'te bulunan ince Spring Security hatası (çözüldü):** Yetkisiz bir
-  kullanıcı `@PreAuthorize` korumalı bir uca istek attığında beklenen 403
-  yerine 401 dönüyordu. Kök neden: `sendError(403)` çağrısı Spring Boot'ta
-  sunucu içinde `/error`'a forward yapıyor, bu forward güvenlik filtre
-  zincirinden tekrar geçiyor ama JWT filtresi ikinci kez çalışmıyor (bu yüzden
-  istek "kimliksiz" sayılıp 401'e dönüşüyordu). `SecurityConfig`'de `/error`
-  yoluna `permitAll()` eklenerek düzeltildi.
+- 🗂️ Şema yönetimi Flyway (`ddl-auto=validate`).
+- 👷 **PPE modeli:** Colab’da eğitilip `ppe_yolov8n.pt` olarak yerleştirildi;
+  DEMO_MODU kapalı. Model **BARET** (`NO-Hardhat`) ve **YELEK**
+  (`NO-Safety Vest`) tespit eder; sette **GOZLUK / `NO-Goggles` yok**.
+- 📦 MODÜL-6 “reddedilen görseller havuzu” tasarımda ileriki fine-tune için
+  bırakıldı; red işlemi `HATALI_TESPIT` + `islem_loglari` ile kayıt altında.
 
 ---
 
-## 5) Üç Katman da Tamamlandı — Sıradaki Adım: Faz 8 (Entegrasyon ve Kapanış)
+## 5) Proje kapanışı (Faz 8)
 
-Backend (**8 endpoint**, rol bazlı erişim kontrolü dahil), Angular frontend
-(giriş, yönetici paneli, formen paneli, istatistik grafiği, ihlal listesi,
-detay modalı, reddetme aksiyonu, kullanıcı oluşturma formu) ve AI Core
-(YOLOv8 tabanlı tespit → yüz blur → backend'e POST) uçtan uca test edilmiş
-ve çalışır durumda.
+`tasarim_mimari.md` MODÜL-1…6 aksiyonları uygulandı ve
+`scripts/e2e-smoke.ps1` ile uçtan uca doğrulandı:
 
-**Faz 7 (AI Core) özeti:**
+1. Backend + AI Core servis hesabı login  
+2. Gerçek PPE modeli ile video → `POST /api/ihlaller` (YELEK/BARET)  
+3. Admin liste + formen (yalnızca blurlu foto, KVKK)  
+4. İstatistik + reddet (`HATALI_TESPIT`)
 
-- `ai-core/src/` altında YOLOv8 Nano tabanlı tespit motoru
-  (`ppe_detector.py`), yüz blur (`face_blur.py`, Haar Cascade +
-  `cv2.GaussianBlur`), backend istemcisi (`auth_client.py` +
-  `backend_client.py`, JWT ile giriş/yenileme) ve ana döngü
-  (`pipeline.py`/`main.py`, cooldown + frame atlama + `--dry-run`/`--show`/
-  `--loop` bayrakları) yazıldı.
-- Backend'e AI Core için özel bir servis hesabı eklendi
-  (`V4__ai_core_servis_hesabi.sql`, `ai_core_servis` / dev-only şifre).
-- ⚠️ **DEMO_MODU notu:** Gerçek bir baret/yelek/gözlük-eksikliği modeli
-  henüz eğitilip `ai-core/models/ppe_yolov8n.pt`'e yerleştirilmedi (bu,
-  etiketli veri seti + eğitim süresi gerektiren ayrı bir iş). Bu dosya
-  yoksa sistem otomatik olarak COCO ön-eğitilmiş `yolov8n.pt`'e düşüp
-  yalnızca "person" sınıfıyla çalışan bir DEMO_MODU'na geçiyor (tespit
-  edilen her kişi, boru hattını test etmek için tüm ihlal tipleriyle
-  işaretleniyor — gerçek tespit değil). Kod, gerçek bir PPE modeli
-  yerleştirildiğinde herhangi bir değişiklik gerekmeden çalışacak şekilde
-  tasarlandı (bkz. `ai-core/README.md`).
-- Uçtan uca doğrulama: backend başlatılıp `V4` migration'ı uygulandı,
-  `ai_core_servis` ile giriş yapıldı, üretilen bir test videosu üzerinden
-  AI Core çalıştırılıp 3 ihlal (BARET/YELEK/GOZLUK) gerçekten
-  `POST /api/ihlaller` ile backend'e gönderildi, veritabanına yazıldı ve
-  `admin` hesabıyla `GET /api/ihlaller` üzerinden görüntülendiği teyit
-  edildi. Detay için bkz. `ILERLEME_GUNLUGU.md` Faz 7 bölümü.
-
-Sırada Faz 8 (Entegrasyon ve Kapanış): üç katmanın uzun süreli/gerçekçi bir
-akışla bir kez daha uçtan uca doğrulanması ve proje kapanış notları.
+Çalıştırma özeti: kök [`README.md`](./README.md).

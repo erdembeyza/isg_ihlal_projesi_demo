@@ -44,8 +44,9 @@ SINIF_TO_IHLAL_TIPI: dict[str, str] = {
 
 TUM_IHLAL_TIPLERI = ("BARET", "YELEK", "GOZLUK")
 
-# Demo modunda (COCO on-egitilmis model) kullanilan "kisi" sinifi.
-COCO_PERSON_SINIFI = "person"
+# Kisi sinifi: COCO modellerinde "person", Construction Site Safety
+# (Roboflow) PPE modellerinde genelde "Person" olarak gelir.
+KISI_SINIF_ISIMLERI = frozenset({"person", "Person"})
 
 
 @dataclass(frozen=True)
@@ -78,10 +79,10 @@ class PpeDedektoru:
         self._sinif_isimleri: dict[int, str] = self._model.names
         self._demo_modu = not (set(self._sinif_isimleri.values()) & SINIF_TO_IHLAL_TIPI.keys())
 
-        if self._demo_modu and COCO_PERSON_SINIFI not in self._sinif_isimleri.values():
+        if self._demo_modu and not (set(self._sinif_isimleri.values()) & KISI_SINIF_ISIMLERI):
             raise RuntimeError(
-                "Yuklenen modelde ne PPE ihlal siniflari ne de COCO 'person' "
-                "sinifi bulundu; bu model AI Core ile uyumlu degil."
+                "Yuklenen modelde ne PPE ihlal siniflari ne de kisi "
+                "sinifi (person/Person) bulundu; bu model AI Core ile uyumlu degil."
             )
 
     @property
@@ -112,7 +113,7 @@ class PpeDedektoru:
         return self._gercek_ihlalleri_uret(etiketli_kutular)
 
     def _gercek_ihlalleri_uret(self, etiketli_kutular) -> list[Ihlal]:
-        kisiler = [kb for kb in etiketli_kutular if kb[0] == COCO_PERSON_SINIFI]
+        kisiler = [kb for kb in etiketli_kutular if kb[0] in KISI_SINIF_ISIMLERI]
         ihlaller: list[Ihlal] = []
         for sinif_adi, guven, kutu in etiketli_kutular:
             ihlal_tipi = SINIF_TO_IHLAL_TIPI.get(sinif_adi)
@@ -127,7 +128,7 @@ class PpeDedektoru:
         icin butun ihlal tipleriyle isaretlenir (gercek tespit degildir)."""
         ihlaller: list[Ihlal] = []
         for sinif_adi, guven, kutu in etiketli_kutular:
-            if sinif_adi != COCO_PERSON_SINIFI:
+            if sinif_adi not in KISI_SINIF_ISIMLERI:
                 continue
             for ihlal_tipi in TUM_IHLAL_TIPLERI:
                 ihlaller.append(Ihlal(ihlal_tipi, guven, kutu))
