@@ -55,6 +55,12 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        // Spring Boot'ta response.sendError(...) cagirimi sunucu icinde /error'a
+                        // forward eder; bu forward guvenlik zincirinden TEKRAR gecer ve JWT filtresi
+                        // (OncePerRequestFilter oldugu icin) ikinci kez calismaz. /error permitAll
+                        // olmazsa bu ikinci gecis "kimliksiz" sayilir ve orijinal 403 yerine 401
+                        // donmesine (yanlis status code) neden olur.
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
