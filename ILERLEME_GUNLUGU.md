@@ -8,8 +8,9 @@ bkz. proje planı (Faz 0 → Faz 8).
 **Son güncelleme:** 3 Ağustos 2026
 **Şu ana kadar tamamlanan fazlar:** Faz 0 (Ortam Kurulumu), Faz 1 (Veritabanı),
 Faz 2 (Backend İskeleti), Faz 3 (Kimlik Doğrulama), Faz 4 (İhlal Servisleri),
-Faz 5 (Frontend İskeleti), Faz 6 (Frontend Ekranları), Faz 7 (AI Core)
-**Sıradaki faz:** Faz 8 (Entegrasyon ve Kapanış)
+Faz 5 (Frontend İskeleti), Faz 6 (Frontend Ekranları), Faz 7 (AI Core),
+Faz 8 (Entegrasyon ve Kapanış)
+**Sıradaki faz:** — (tüm fazlar tamamlandı)
 
 ---
 
@@ -41,7 +42,8 @@ ayrı izlenebilir kalıyor, `main` her zaman derlenebilir/çalışır durumda tu
 | `faz-4-ihlal-servisleri` | merge edildi | `IhlalController`/`Service`, `KullaniciController`/`Service`, `BolgeController`, `FileStorageService`, `WebConfig` |
 | `faz-5-frontend-iskeleti` | merge edildi | Angular 22 projesi, `AuthService`, `jwtInterceptor`, guard'lar, `LoginComponent`, dashboard iskeletleri, backend CORS ayarı |
 | `faz-6-frontend-ekranlari` | merge edildi | `IhlalListesiComponent`, `IstatistikGrafikComponent`, `IhlalDetayModalComponent`, dolu dashboard içerikleri, `AuthImgDirective`, ikinci demo bölge (`V3__ikinci_bolge.sql`) |
-| `faz-7-ai-core` | geliştiriliyor (bu günlük güncellemesiyle commit edilecek) | `ai-core/src/` (config, auth_client, backend_client, face_blur, ppe_detector, pipeline, main), test videosu üretme aracı, AI Core servis hesabı (`V4__ai_core_servis_hesabi.sql`) |
+| `faz-7-ai-core` | merge edildi | `ai-core/src/` (config, auth_client, backend_client, face_blur, ppe_detector, pipeline, main), test videosu üretme aracı, AI Core servis hesabı (`V4__ai_core_servis_hesabi.sql`) |
+| `faz-8-entegrasyon-kapanis` | merge edildi | kök `README.md`, `scripts/e2e-smoke.ps1`, PPE model uyumu (`Person`/`person`), kapanış notları |
 
 ---
 
@@ -590,8 +592,52 @@ uçtan uca doğrulandı (bkz. Test bölümü).
 
 ---
 
-## Sırada Ne Var — Faz 8 (Entegrasyon ve Kapanış)
+## Faz 8 — Entegrasyon ve Kapanış
 
-- Üç katmanın (AI Core, Backend, Frontend) birlikte, gerçek/uzun süreli bir
-  akışla uçtan uca son bir kez doğrulanması.
-- Proje genelinde kalan dokümantasyon/temizlik işleri ve kapanış notları.
+### Ne yapıldı
+
+- **`tasarim_mimari.md` MODÜL-1…6** kapsamındaki üç katman, gerçek PPE
+  modeli (`ai-core/models/ppe_yolov8n.pt`, Colab’da Construction Site Safety
+  ile fine-tune) ile tekrar uçtan uca doğrulandı:
+  AI Core (demo_modu=False) → JWT login (`ai_core_servis`) →
+  `POST /api/ihlaller` (YELEK/BARET) → admin `GET` + formen kapsamı
+  (blurlu foto, orijinal sızdırmaz) → istatistik → `POST .../reddet`
+  (MODÜL-6, `HATALI_TESPIT`).
+- **`scripts/e2e-smoke.ps1`** — bu doğrulamayı tekrarlanabilir kılan duman
+  testi (backend ayaktayken repo kökünden çalıştırılır).
+- **Kök `README.md`** — docker → backend → frontend → AI Core hızlı
+  başlatma, rol tablosu, bilinen sınırlamalar (kapanış).
+- **`ppe_detector.py`** — Roboflow PPE modellerindeki `Person` sınıfı ile
+  COCO `person` sınıfının ikisi de kabul edilir (yüz blur eşlemesi).
+- **`ai-core/README.md`** — eğitilmiş modelin yerleştirildiği varsayımı ve
+  GOZLUK (`NO-Goggles` sette yok) sınırı güncellendi.
+
+### Tasarım checklist (kapanış)
+
+| Modül | Durum |
+|---|---|
+| MODÜL-1 AI Core (tespit, blur, POST, offline video) | ✅ |
+| MODÜL-2 Backend API (kayıt, liste, istatistik, reddet) | ✅ |
+| MODÜL-3 JWT Security (login, guard, interceptor, PreAuthorize) | ✅ |
+| MODÜL-4 Admin Dashboard | ✅ (Faz 5–6) |
+| MODÜL-5 Formen Dashboard | ✅ (Faz 5–6) |
+| MODÜL-6 Audit & Feedback (HATALI_TESPIT + islem_loglari) | ✅; “reddedilen görseller havuzu” tasarımda ileriki fine-tune için bırakıldı |
+
+### Bilinen sınırlamalar (kapanış notu)
+
+- Eğitilen modelde **GOZLUK / `NO-Goggles` yok**; BARET ve YELEK tespit edilir.
+- Canlı RTSP yerine geliştirmede yerel/Kaggle videosu kullanılır
+  (`VIDEO_SOURCE`); Kaggle dosyası `ai-core/test_videos/` altına konur.
+- `.pt` ağırlıkları git’e alınmaz; her ortamda `models/ppe_yolov8n.pt`
+  ayrıca yerleştirilmelidir.
+
+### Test / Doğrulama
+
+`powershell -File scripts/e2e-smoke.ps1` — admin/AI Core login, 2 yeni ihlal
+(id 23–24), formen KVKK kontrolü, istatistik, reddet (id=24 → HATALI_TESPIT).
+
+### Kullanılan araçlar
+
+- PowerShell (`scripts/e2e-smoke.ps1`, `Invoke-RestMethod`)
+- AI Core CLI (`python -m src.main`)
+- Docker PostgreSQL (zaten ayakta), çalışan Spring Boot (port 8080)
