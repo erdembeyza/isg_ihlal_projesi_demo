@@ -1,0 +1,39 @@
+<div class="giris-sayfasi">
+  <form class="giris-karti" [formGroup]="form" (ngSubmit)="girisYap()" novalidate>
+    <div class="logo">🦺</div>
+    <h1>İSG İhlal Tespit Sistemi</h1>
+    <p class="alt-baslik">Yetkili personel girişi</p>
+
+    <label for="kullaniciAdi">Kullanıcı Adı</label>
+    <input
+      id="kullaniciAdi"
+      type="text"
+      formControlName="kullaniciAdi"
+      autocomplete="username"
+      placeholder="ör. admin"
+    />
+    @if (form.controls.kullaniciAdi.invalid && form.controls.kullaniciAdi.touched) {
+      <span class="alan-hatasi">Kullanıcı adı zorunludur.</span>
+    }
+
+    <label for="sifre">Şifre</label>
+    <input
+      id="sifre"
+      type="password"
+      formControlName="sifre"
+      autocomplete="current-password"
+      placeholder="••••••••"
+    />
+    @if (form.controls.sifre.invalid && form.controls.sifre.touched) {
+      <span class="alan-hatasi">Şifre zorunludur.</span>
+    }
+
+    @if (hataMesaji()) {
+      <div class="genel-hata">{{ hataMesaji() }}</div>
+    }
+
+    <button type="submit" [disabled]="gonderiliyor()">
+      {{ gonderiliyor() ? 'Giriş yapılıyor...' : 'Giriş Yap' }}
+    </button>
+  </form>
+</div>

@@ -1,22 +1,55 @@
 # Frontend (Angular)
 
-Bu klasör, Angular tabanlı web arayüzünü (Login, Admin/Formen Dashboard,
-İhlal Listesi, İstatistik Grafiği, İhlal Detay Modalı) barındıracaktır.
+İSG Kural İhlal Tespit ve Uyarı Sistemi'nin web arayüzü. Angular CLI 22 ile
+standalone component mimarisiyle oluşturulmuştur (bkz. proje kökündeki
+[`tasarim_mimari.md`](../tasarim_mimari.md) — BİLEŞENLER bölümü).
 
-Angular projesi **Faz 5-6** kapsamında Angular CLI ile bu klasör içinde
-oluşturulacaktır:
+## Geliştirme sunucusunu çalıştırma
+
+Backend'in `localhost:8080`'de ayakta olduğundan emin olun (bkz.
+[`../backend/README.md`](../backend/README.md)), ardından:
 
 ```powershell
-ng new frontend --directory . --routing --style scss
+npm install
+ng serve
 ```
 
-**Planlanan bileşen hiyerarşisi** (`tasarim_mimari.md` — BİLEŞENLER bölümü):
+`http://localhost:4200` adresinden erişilebilir; dosya değişikliklerinde
+otomatik yeniden yüklenir. Geliştirme ortamında API adresi
+`src/environments/environment.development.ts` içinde
+`http://localhost:8080/api` olarak tanımlıdır.
 
-- `LoginComponent`
-- `AdminDashboardComponent`
-  - `IhlalListesiComponent`
-  - `IstatistikGrafikComponent`
-  - `IhlalDetayModalComponent`
-- `ForemanDashboardComponent`
-  - `IhlalListesiComponent`
-  - `IstatistikGrafikComponent`
+## Klasör yapısı
+
+```text
+src/app/
+  core/
+    models/        Backend DTO'larina karsilik gelen TS interface'leri
+    services/       AuthService, IhlalService, BolgeService, KullaniciService
+    interceptors/    jwtInterceptor - her istege Authorization header'i ekler
+    guards/          authGuard, adminGuard, foremanGuard
+  features/
+    login/                 COMPONENT-1
+    admin-dashboard/       COMPONENT-2 (+ alt bilesenler)
+    foreman-dashboard/     COMPONENT-3 (+ alt bilesenler)
+    shared/                IhlalListesiComponent, IstatistikGrafikComponent,
+                           IhlalDetayModalComponent (COMPONENT-4/5/6)
+```
+
+## Test giriş bilgileri (yalnızca geliştirme ortamı)
+
+| Kullanıcı adı | Şifre | Rol |
+|---|---|---|
+| `admin` | `Admin123!` | ISG_YONETICI |
+| `formen1` | `Formen123!` | FORMEN |
+
+## Build
+
+```powershell
+ng build
+```
+
+Çıktı `dist/frontend` altında oluşur; `angular.json`'daki `development`
+konfigürasyonu `environment.development.ts` dosyasını, `production`
+konfigürasyonu ise varsayılan `environment.ts` dosyasını (bağıl `/api` yolu)
+kullanır.
