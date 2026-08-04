@@ -5,6 +5,7 @@ import com.isg.ihlal.backend.dto.IhlalIstatistikDTO;
 import com.isg.ihlal.backend.dto.IhlalKayitRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalRedRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalResponseDTO;
+import com.isg.ihlal.backend.dto.PersonelIstatistikDTO;
 import com.isg.ihlal.backend.security.AuthenticatedUser;
 import com.isg.ihlal.backend.service.IhlalService;
 import jakarta.validation.Valid;
@@ -58,6 +59,12 @@ public class IhlalController {
         return ihlalService.istatistik(user);
     }
 
+    @GetMapping("/istatistik/personel")
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
+    public List<PersonelIstatistikDTO> personelIstatistik(@AuthenticationPrincipal AuthenticatedUser user) {
+        return ihlalService.personelIstatistik(user);
+    }
+
     /**
      * MODUL-6: mevcut HATALI_TESPIT orijinal fotolarini fine-tune havuzuna senkronize eder.
      * Path'te literal segment, /{id} ile catismasin diye id mapping'inden once tanimlanir.
@@ -82,5 +89,14 @@ public class IhlalController {
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
         return ihlalService.reddet(id, dto, user);
+    }
+
+    @PostMapping("/{id}/coz")
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
+    public IhlalResponseDTO coz(
+            @PathVariable Long id,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return ihlalService.coz(id, user);
     }
 }

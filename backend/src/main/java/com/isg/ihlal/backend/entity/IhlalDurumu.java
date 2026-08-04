@@ -5,5 +5,6 @@ package com.isg.ihlal.backend.entity;
  */
 public enum IhlalDurumu {
     AKTIF,
-    HATALI_TESPIT
+    HATALI_TESPIT,
+    COZULDU
 }

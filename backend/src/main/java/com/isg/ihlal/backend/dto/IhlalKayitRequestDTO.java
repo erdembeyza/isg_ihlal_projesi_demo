@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 
 /**
  * DTO-1 (tasarim_mimari.md): AI Core servisinin POST /api/ihlaller ucuna
- * gonderdigi yeni ihlal kaydi istegi. Fotograflar base64 string olarak
- * tasinir; backend bunlari cozup dosya sistemine yazar (bkz. FileStorageService).
+ * gonderdigi yeni ihlal kaydi istegi. Fotograf base64 string olarak
+ * tasinir; backend bunu cozup dosya sistemine yazar (bkz. FileStorageService).
  */
 public record IhlalKayitRequestDTO(
 
@@ -24,7 +24,10 @@ public record IhlalKayitRequestDTO(
         @NotBlank(message = "orijinalFotoBase64 zorunludur")
         String orijinalFotoBase64,
 
-        @NotBlank(message = "blurluFotoBase64 zorunludur")
-        String blurluFotoBase64
+        /** Opsiyonel: AI / manuel personel eslestirmesi (personel.id). */
+        Long personelId,
+
+        /** Opsiyonel: personelId yoksa sicil no ile eslestirme. */
+        String personelSicilNo
 ) {
 }

@@ -18,8 +18,8 @@ import java.util.UUID;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
 /**
- * MODUL-2 (tasarim_mimari.md): "Kanit gorsellerini (orijinal/blurlu) dosya
- * sistemine/nesne depolamaya yazar, veritabanina yalnizca dosya yolunu isler".
+ * MODUL-2 (tasarim_mimari.md): "Kanit gorsellerini dosya sistemine/nesne
+ * depolamaya yazar, veritabanina yalnizca dosya yolunu isler".
  * <p>
  * Gelistirme ortaminda yerel dosya sistemine yazar; ileride S3/nesne depolama
  * gibi bir alternatife gecilirse yalnizca bu servisin degismesi yeterlidir.
@@ -55,7 +55,7 @@ public class FileStorageService {
      * bagil URL'i ("/uploads/ihlaller/...") doner (bkz. WebConfig).
      *
      * @param base64Icerik "data:image/jpeg;base64,..." on eki olsun ya da olmasin kabul edilir.
-     * @param dosyaOnEki   dosya adina okunabilirlik icin eklenen etiket (ör. "orijinal", "blur")
+     * @param dosyaOnEki   dosya adina okunabilirlik icin eklenen etiket (ör. "orijinal")
      */
     public String base64FotoKaydet(String base64Icerik, String dosyaOnEki) {
         String temizIcerik = base64Icerik;
@@ -74,15 +74,40 @@ public class FileStorageService {
             );
         }
 
-        String dosyaAdi = UUID.randomUUID() + "_" + StringUtils.trimAllWhitespace(dosyaOnEki) + ".jpg";
-        Path hedefYol = kokDizin.resolve(dosyaAdi);
+        return dosyayiYaz(veri, UUID.randomUUID() + "_" + StringUtils.trimAllWhitespace(dosyaOnEki) + ".jpg");
+    }
 
+    /**
+     * Ihlal kanit fotografini ortak UUID ile kaydeder (örnek: {uuid}_orijinal.jpg).
+     */
+    public String orijinalFotoKaydet(String orijinalBase64) {
+        String kimlik = UUID.randomUUID().toString();
+        return dosyayiYaz(base64Coz(orijinalBase64), kimlik + "_orijinal.jpg");
+    }
+
+    private byte[] base64Coz(String base64Icerik) {
+        String temizIcerik = base64Icerik;
+        int virgulIndex = base64Icerik.indexOf(',');
+        if (base64Icerik.startsWith("data:") && virgulIndex >= 0) {
+            temizIcerik = base64Icerik.substring(virgulIndex + 1);
+        }
+        try {
+            return Base64.getDecoder().decode(temizIcerik);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Gecersiz base64 foto icerigi"
+            );
+        }
+    }
+
+    private String dosyayiYaz(byte[] veri, String dosyaAdi) {
+        Path hedefYol = kokDizin.resolve(dosyaAdi);
         try {
             Files.write(hedefYol, veri);
         } catch (IOException e) {
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Foto diske yazilamadi", e);
         }
-
         return "/uploads/" + ALT_KLASOR + "/" + dosyaAdi;
     }
 

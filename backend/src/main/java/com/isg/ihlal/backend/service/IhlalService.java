@@ -5,18 +5,21 @@ import com.isg.ihlal.backend.dto.IhlalIstatistikDTO;
 import com.isg.ihlal.backend.dto.IhlalKayitRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalRedRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalResponseDTO;
+import com.isg.ihlal.backend.dto.PersonelIstatistikDTO;
 import com.isg.ihlal.backend.entity.Bolge;
 import com.isg.ihlal.backend.entity.Ihlal;
 import com.isg.ihlal.backend.entity.IhlalDurumu;
 import com.isg.ihlal.backend.entity.IhlalTipi;
 import com.isg.ihlal.backend.entity.IslemLog;
 import com.isg.ihlal.backend.entity.Kullanici;
+import com.isg.ihlal.backend.entity.Personel;
 import com.isg.ihlal.backend.entity.Rol;
 import com.isg.ihlal.backend.repository.BolgeRepository;
 import com.isg.ihlal.backend.repository.IhlalRepository;
 import com.isg.ihlal.backend.repository.IhlalTipiRepository;
 import com.isg.ihlal.backend.repository.IslemLogRepository;
 import com.isg.ihlal.backend.repository.KullaniciRepository;
+import com.isg.ihlal.backend.repository.PersonelRepository;
 import com.isg.ihlal.backend.security.AuthenticatedUser;
 import com.isg.ihlal.backend.storage.FileStorageService;
 import org.springframework.http.HttpStatus;
@@ -26,22 +29,24 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * MODUL-2 (tasarim_mimari.md): ihlal kayitlarinin olusturulmasi, rol bazli
- * listelenmesi/goruntulenmesi, reddedilmesi ve istatistik hesaplamasi.
- */
-/**
+ * listelenmesi/goruntulenmesi, reddedilmesi/cozumu ve istatistik hesaplamasi.
+ *
  * Sinif genelinde @Transactional(readOnly = true): entity -> DTO donusumu
- * sirasinda bolge/ihlalTipi gibi LAZY iliskilere erisildiginde Hibernate
+ * sirasinda bolge/ihlalTipi/personel gibi LAZY iliskilere erisildiginde Hibernate
  * session'inin acik kalmasini saglar (aksi halde LazyInitializationException
  * alinir, cunku application.yml'de open-in-view kapali).
- * Yazma yapan metotlar (kaydet, reddet) kendi @Transactional'lari ile override eder.
+ * Yazma yapan metotlar kendi @Transactional'lari ile override eder.
  */
 @Service
 @Transactional(readOnly = true)
@@ -52,6 +57,7 @@ public class IhlalService {
     private final IhlalTipiRepository ihlalTipiRepository;
     private final KullaniciRepository kullaniciRepository;
     private final IslemLogRepository islemLogRepository;
+    private final PersonelRepository personelRepository;
     private final FileStorageService fileStorageService;
 
     public IhlalService(
@@ -60,6 +66,7 @@ public class IhlalService {
             IhlalTipiRepository ihlalTipiRepository,
             KullaniciRepository kullaniciRepository,
             IslemLogRepository islemLogRepository,
+            PersonelRepository personelRepository,
             FileStorageService fileStorageService
     ) {
         this.ihlalRepository = ihlalRepository;
@@ -67,6 +74,7 @@ public class IhlalService {
         this.ihlalTipiRepository = ihlalTipiRepository;
         this.kullaniciRepository = kullaniciRepository;
         this.islemLogRepository = islemLogRepository;
+        this.personelRepository = personelRepository;
         this.fileStorageService = fileStorageService;
     }
 
@@ -77,27 +85,19 @@ public class IhlalService {
         IhlalTipi ihlalTipi = ihlalTipiRepository.findById(dto.ihlalTipiId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ihlal tipi bulunamadi: " + dto.ihlalTipiId()));
 
-        String orijinalYol = fileStorageService.base64FotoKaydet(dto.orijinalFotoBase64(), "orijinal");
-        String blurluYol = fileStorageService.base64FotoKaydet(dto.blurluFotoBase64(), "blur");
+        String orijinalYol = fileStorageService.orijinalFotoKaydet(dto.orijinalFotoBase64());
 
         Ihlal ihlal = new Ihlal();
         ihlal.setBolge(bolge);
         ihlal.setIhlalTipi(ihlalTipi);
         ihlal.setTespitZamani(dto.tespitZamani());
         ihlal.setOrijinalFotoYolu(orijinalYol);
-        ihlal.setBlurluFotoYolu(blurluYol);
         ihlal.setDurum(IhlalDurumu.AKTIF);
+        ihlal.setPersonel(personelCozumle(dto.personelId(), dto.personelSicilNo()));
 
         Ihlal kaydedilen = ihlalRepository.save(ihlal);
 
-        return new IhlalResponseDTO(
-                kaydedilen.getId(),
-                bolge.getBolgeAdi(),
-                ihlalTipi.getTipAdi(),
-                kaydedilen.getTespitZamani(),
-                kaydedilen.getOrijinalFotoYolu(),
-                kaydedilen.getDurum().name()
-        );
+        return toDto(kaydedilen);
     }
 
     public List<IhlalResponseDTO> listele(AuthenticatedUser user) {
@@ -106,18 +106,14 @@ public class IhlalService {
                 : ihlalRepository.findAll();
 
         return ihlaller.stream()
-                .map(ihlal -> toDto(ihlal, user))
+                .map(this::toDto)
                 .toList();
     }
 
     public IhlalResponseDTO detay(Long id, AuthenticatedUser user) {
         Ihlal ihlal = bul(id);
-
-        if (isFormen(user) && !ihlal.getBolge().getId().equals(user.bolgeId())) {
-            throw new AccessDeniedException("Bu bolgeye ait ihlal kaydina erisim yetkiniz yok");
-        }
-
-        return toDto(ihlal, user);
+        bolgeErisimKontrol(ihlal, user);
+        return toDto(ihlal);
     }
 
     @Transactional
@@ -147,7 +143,39 @@ public class IhlalService {
                 guncellenen.getIhlalTipi().getTipAdi()
         );
 
-        return toDto(guncellenen, user);
+        return toDto(guncellenen);
+    }
+
+    /**
+     * AKTIF ihlali COZULDU olarak isaretler. Formen yalnizca kendi bolgesindeki
+     * kayitlari cozebilir; yonetici tum fabrika kayitlarini cozebilir.
+     */
+    @Transactional
+    public IhlalResponseDTO coz(Long id, AuthenticatedUser user) {
+        Ihlal ihlal = bul(id);
+        bolgeErisimKontrol(ihlal, user);
+
+        if (ihlal.getDurum() != IhlalDurumu.AKTIF) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Yalnizca AKTIF ihlaller cozulebilir");
+        }
+
+        Kullanici cozen = kullaniciRepository.findById(user.kullaniciId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Kullanici bulunamadi: " + user.kullaniciId()));
+
+        ihlal.setDurum(IhlalDurumu.COZULDU);
+        ihlal.setCozenKullanici(cozen);
+        ihlal.setCozmeZamani(LocalDateTime.now());
+        Ihlal guncellenen = ihlalRepository.save(ihlal);
+
+        IslemLog log = new IslemLog();
+        log.setKullanici(cozen);
+        log.setIslemTipi("IHLAL_COZME");
+        log.setIlgiliIhlal(guncellenen);
+        log.setIslemZamani(LocalDateTime.now());
+        log.setDetay("Ihlal cozuldu olarak isaretlendi");
+        islemLogRepository.save(log);
+
+        return toDto(guncellenen);
     }
 
     /**
@@ -212,6 +240,54 @@ public class IhlalService {
                 .toList();
     }
 
+    /**
+     * Personel bazli ihlal analizi: toplam ihlal ve en cok ihlal edilen kategori.
+     * HATALI_TESPIT kayitlari analize dahil edilmez.
+     */
+    public List<PersonelIstatistikDTO> personelIstatistik(AuthenticatedUser user) {
+        List<Ihlal> kapsam = isFormen(user)
+                ? ihlalRepository.findByBolgeId(user.bolgeId())
+                : ihlalRepository.findAll();
+
+        Map<Long, List<Ihlal>> personelGruplari = kapsam.stream()
+                .filter(i -> i.getPersonel() != null)
+                .filter(i -> i.getDurum() != IhlalDurumu.HATALI_TESPIT)
+                .collect(Collectors.groupingBy(i -> i.getPersonel().getId(), LinkedHashMap::new, Collectors.toList()));
+
+        return personelGruplari.values().stream()
+                .map(liste -> {
+                    Personel personel = liste.getFirst().getPersonel();
+                    String enCokKategori = liste.stream()
+                            .collect(Collectors.groupingBy(i -> i.getIhlalTipi().getTipAdi(), Collectors.counting()))
+                            .entrySet().stream()
+                            .max(Map.Entry.comparingByValue())
+                            .map(Map.Entry::getKey)
+                            .orElse("-");
+                    return new PersonelIstatistikDTO(
+                            personel.getId(),
+                            personel.getAdSoyad(),
+                            personel.getSicilNo(),
+                            personel.getDepartman(),
+                            liste.size(),
+                            enCokKategori
+                    );
+                })
+                .sorted(Comparator.comparingInt(PersonelIstatistikDTO::toplamIhlal).reversed())
+                .toList();
+    }
+
+    private Personel personelCozumle(Long personelId, String sicilNo) {
+        if (personelId != null) {
+            return personelRepository.findById(personelId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personel bulunamadi: " + personelId));
+        }
+        if (sicilNo != null && !sicilNo.isBlank()) {
+            return personelRepository.findBySicilNo(sicilNo.trim())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personel bulunamadi (sicil): " + sicilNo));
+        }
+        return null;
+    }
+
     private double yuzdeDegisimHesapla(long buHafta, long onceki) {
         if (onceki == 0) {
             return buHafta == 0 ? 0.0 : 100.0;
@@ -225,23 +301,28 @@ public class IhlalService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ihlal bulunamadi: " + id));
     }
 
+    private void bolgeErisimKontrol(Ihlal ihlal, AuthenticatedUser user) {
+        if (isFormen(user) && !Objects.equals(ihlal.getBolge().getId(), user.bolgeId())) {
+            throw new AccessDeniedException("Bu bolgeye ait ihlal kaydina erisim yetkiniz yok");
+        }
+    }
+
     private boolean isFormen(AuthenticatedUser user) {
         return Rol.FORMEN.name().equals(user.rol());
     }
 
-    private IhlalResponseDTO toDto(Ihlal ihlal, AuthenticatedUser user) {
-        // KVKK: panelde her zaman yuzu blurlu kanit gosterilir.
-        // (Orijinal dosya diskte kalir; finetune havuzu / denetim icin.)
-        // BARET/YELEK ayri kayit olsa bile baska bir kisinin yuzu acik kalmaz.
-        String fotoUrl = ihlal.getBlurluFotoYolu();
-
+    private IhlalResponseDTO toDto(Ihlal ihlal) {
+        Personel personel = ihlal.getPersonel();
         return new IhlalResponseDTO(
                 ihlal.getId(),
                 ihlal.getBolge().getBolgeAdi(),
                 ihlal.getIhlalTipi().getTipAdi(),
                 ihlal.getTespitZamani(),
-                fotoUrl,
-                ihlal.getDurum().name()
+                ihlal.getOrijinalFotoYolu(),
+                ihlal.getDurum().name(),
+                personel != null ? personel.getId() : null,
+                personel != null ? personel.getAdSoyad() : null,
+                personel != null ? personel.getSicilNo() : null
         );
     }
 

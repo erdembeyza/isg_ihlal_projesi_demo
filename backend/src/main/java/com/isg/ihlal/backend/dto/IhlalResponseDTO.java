@@ -4,8 +4,7 @@ import java.time.LocalDateTime;
 
 /**
  * DTO-2 (tasarim_mimari.md): Ihlal listesi/detayinda donen model.
- * fotoUrl, caginin rolune gore IhlalService tarafindan orijinal ya da
- * blurlu fotografin yoluna set edilir (formen -> blur, yonetici -> orijinal).
+ * fotoUrl, kanit fotografının erisim yoludur.
  */
 public record IhlalResponseDTO(
         Long id,
@@ -13,6 +12,9 @@ public record IhlalResponseDTO(
         String ihlalTipiAdi,
         LocalDateTime tespitZamani,
         String fotoUrl,
-        String durum
+        String durum,
+        Long personelId,
+        String personelAdi,
+        String personelSicilNo
 ) {
 }

@@ -50,15 +50,14 @@ public class Ihlal {
     @Column(name = "orijinal_foto_yolu", nullable = false, length = 500)
     private String orijinalFotoYolu;
 
-    @NotBlank
-    @Size(max = 500)
-    @Column(name = "blurlu_foto_yolu", nullable = false, length = 500)
-    private String blurluFotoYolu;
-
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "durum", nullable = false, length = 20)
     private IhlalDurumu durum = IhlalDurumu.AKTIF;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "personel_id")
+    private Personel personel;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reddeden_kullanici_id")
@@ -66,6 +65,13 @@ public class Ihlal {
 
     @Column(name = "red_zamani")
     private LocalDateTime redZamani;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cozen_kullanici_id")
+    private Kullanici cozenKullanici;
+
+    @Column(name = "cozme_zamani")
+    private LocalDateTime cozmeZamani;
 
     @Column(name = "olusturma_zamani", nullable = false, updatable = false)
     private LocalDateTime olusturmaZamani;
@@ -123,20 +129,20 @@ public class Ihlal {
         this.orijinalFotoYolu = orijinalFotoYolu;
     }
 
-    public String getBlurluFotoYolu() {
-        return blurluFotoYolu;
-    }
-
-    public void setBlurluFotoYolu(String blurluFotoYolu) {
-        this.blurluFotoYolu = blurluFotoYolu;
-    }
-
     public IhlalDurumu getDurum() {
         return durum;
     }
 
     public void setDurum(IhlalDurumu durum) {
         this.durum = durum;
+    }
+
+    public Personel getPersonel() {
+        return personel;
+    }
+
+    public void setPersonel(Personel personel) {
+        this.personel = personel;
     }
 
     public Kullanici getReddedenKullanici() {
@@ -153,6 +159,22 @@ public class Ihlal {
 
     public void setRedZamani(LocalDateTime redZamani) {
         this.redZamani = redZamani;
+    }
+
+    public Kullanici getCozenKullanici() {
+        return cozenKullanici;
+    }
+
+    public void setCozenKullanici(Kullanici cozenKullanici) {
+        this.cozenKullanici = cozenKullanici;
+    }
+
+    public LocalDateTime getCozmeZamani() {
+        return cozmeZamani;
+    }
+
+    public void setCozmeZamani(LocalDateTime cozmeZamani) {
+        this.cozmeZamani = cozmeZamani;
     }
 
     public LocalDateTime getOlusturmaZamani() {
