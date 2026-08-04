@@ -1,0 +1,5 @@
+# Roboflow'tan indirilen YOLOv8 veri seti buraya cikartilir.
+# Beklenen yapi:
+#   train/images/  train/labels/
+#   valid/images/  valid/labels/
+#   data.yaml

@@ -98,6 +98,9 @@ python -m src.main --source test_videos/demo2.mp4 --loop --dry-run --show
 `models/ppe_yolov8n.pt` yoksa DEMO_MODU’na düşer (gerçek üretim tespiti değil).
 GOZLUK sınıfı mevcut eğitimde yoktur (BARET / YELEK çalışır).
 
+Yeni saha görüntüleriyle modeli güncellemek (fine-tune) için:
+`training/README.md` dosyasına bakın.
+
 ## Mimari
 
 | Dosya | Sorumluluk |

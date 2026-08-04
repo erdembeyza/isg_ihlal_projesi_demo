@@ -1,0 +1,37 @@
+# Roboflow'tan YOLOv8 formatinda indirdikten sonra bu dosyayi
+# yeni_veri_seti/data.yaml olarak kaydedin ve yollari kontrol edin.
+#
+# ONEMLI: names listesi mevcut modelle BIREBIR ayni sirada olmali.
+# Guncel listeyi gormek icin: python siniflari_goster.py
+
+path: .
+train: train/images
+val: valid/images
+
+nc: 25
+names:
+  - Excavator
+  - Gloves
+  - Hardhat
+  - Ladder
+  - Mask
+  - NO-Hardhat
+  - NO-Mask
+  - NO-Safety Vest
+  - Person
+  - SUV
+  - Safety Cone
+  - Safety Vest
+  - bus
+  - dump truck
+  - fire hydrant
+  - machinery
+  - mini-van
+  - sedan
+  - semi
+  - trailer
+  - truck
+  - truck and trailer
+  - van
+  - vehicle
+  - wheel loader
