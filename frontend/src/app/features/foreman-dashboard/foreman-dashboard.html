@@ -1,125 +1,127 @@
-<header class="panel-basligi">
-  <div>
-    <h1>Formen Takip Paneli</h1>
-    <p>Hoş geldiniz, {{ authService.currentUser()?.adSoyad }} — Yalnızca sorumlu olduğunuz bölge</p>
-  </div>
-  <button (click)="cikisYap()">Çıkış Yap</button>
-</header>
+<app-panel-shell>
+  <header class="panel-basligi">
+    <div>
+      <h1>Formen Takip Paneli</h1>
+      <p>Hoş geldiniz, {{ authService.currentUser()?.adSoyad }} — Yalnızca sorumlu olduğunuz bölge</p>
+    </div>
+    <button class="birincil-buton" (click)="cikisYap()">Çıkış Yap</button>
+  </header>
 
-<main class="panel-icerik">
-  @if (hataMesaji(); as hata) {
-    <p class="genel-hata">{{ hata }}</p>
-  }
-
-  @if (aksiyonHatasi(); as aksiyonHata) {
-    <p class="genel-hata">{{ aksiyonHata }}</p>
-  }
-
-  @if (yukleniyor()) {
-    <p class="yukleniyor">Veriler yükleniyor…</p>
-  } @else {
-    @if (enBelirginTrend(); as trend) {
-      <section class="trend-banner" [class.artis]="trend.yuzdeDegisim > 0" [class.azalis]="trend.yuzdeDegisim < 0">
-        <span class="ikon">{{ trend.yuzdeDegisim > 0 ? '⚠️' : '✅' }}</span>
-        <span>
-          Bu hafta <strong>{{ trend.ihlalTipiAdi }}</strong> ihlalleri geçen haftaya göre
-          <strong>%{{ trend.yuzdeDegisim > 0 ? '+' : '' }}{{ trend.yuzdeDegisim }}</strong>
-          {{ trend.yuzdeDegisim > 0 ? 'arttı' : trend.yuzdeDegisim < 0 ? 'azaldı' : 'değişmedi' }}.
-        </span>
-      </section>
+  <main class="panel-icerik">
+    @if (hataMesaji(); as hata) {
+      <p class="genel-hata">{{ hata }}</p>
     }
 
-    <section class="kpi-satiri" aria-label="Hızlı istatistikler">
-      <article class="kpi-kart">
-        <span class="kpi-etiket">Aktif İhlaller</span>
-        <strong class="kpi-deger">{{ aktifIhlalSayisi() }}</strong>
-        <span class="kpi-alt">Müdahale bekleyen</span>
-      </article>
-      <article class="kpi-kart">
-        <span class="kpi-etiket">Bugünkü İhlaller</span>
-        <strong class="kpi-deger">{{ bugunkuIhlalSayisi() }}</strong>
-        <span class="kpi-alt">Bugün gerçekleşen</span>
-      </article>
-      <article class="kpi-kart risk" [class.kritik]="bolgeRisk().seviye === 'kritik'" [class.stabil]="bolgeRisk().seviye === 'stabil'">
-        <span class="kpi-etiket">Bölge Risk Durumu</span>
-        <strong class="kpi-deger">{{ bolgeRisk().etiket }}</strong>
-        <span class="kpi-alt">
-          {{ bolgeRisk().seviye === 'kritik' ? 'Aktif ihlal ≥ 3' : 'Aktif ihlal 0–2' }}
-        </span>
-      </article>
-    </section>
+    @if (aksiyonHatasi(); as aksiyonHata) {
+      <p class="genel-hata">{{ aksiyonHata }}</p>
+    }
 
-    <div class="ust-grid">
-      <section class="kart">
-        <h2>Bölge İstatistikleri</h2>
-        <app-istatistik-grafik [istatistikler]="istatistikler()" (tipSecildi)="grafiktenTipSecildi($event)" />
+    @if (yukleniyor()) {
+      <p class="yukleniyor">Veriler yükleniyor…</p>
+    } @else {
+      @if (enBelirginTrend(); as trend) {
+        <section class="trend-banner" [class.artis]="trend.yuzdeDegisim > 0" [class.azalis]="trend.yuzdeDegisim < 0">
+          <span class="ikon">{{ trend.yuzdeDegisim > 0 ? '⚠️' : '✅' }}</span>
+          <span>
+            Bu hafta <strong>{{ trend.ihlalTipiAdi }}</strong> ihlalleri geçen haftaya göre
+            <strong>%{{ trend.yuzdeDegisim > 0 ? '+' : '' }}{{ trend.yuzdeDegisim }}</strong>
+            {{ trend.yuzdeDegisim > 0 ? 'arttı' : trend.yuzdeDegisim < 0 ? 'azaldı' : 'değişmedi' }}.
+          </span>
+        </section>
+      }
+
+      <section class="kpi-satiri" aria-label="Hızlı istatistikler">
+        <article class="kpi-kart">
+          <span class="kpi-etiket">Aktif İhlaller</span>
+          <strong class="kpi-deger">{{ aktifIhlalSayisi() }}</strong>
+          <span class="kpi-alt">Müdahale bekleyen</span>
+        </article>
+        <article class="kpi-kart">
+          <span class="kpi-etiket">Bugünkü İhlaller</span>
+          <strong class="kpi-deger">{{ bugunkuIhlalSayisi() }}</strong>
+          <span class="kpi-alt">Bugün gerçekleşen</span>
+        </article>
+        <article class="kpi-kart risk" [class.kritik]="bolgeRisk().seviye === 'kritik'" [class.stabil]="bolgeRisk().seviye === 'stabil'">
+          <span class="kpi-etiket">Bölge Risk Durumu</span>
+          <strong class="kpi-deger">{{ bolgeRisk().etiket }}</strong>
+          <span class="kpi-alt">
+            {{ bolgeRisk().seviye === 'kritik' ? 'Aktif ihlal ≥ 3' : 'Aktif ihlal 0–2' }}
+          </span>
+        </article>
       </section>
 
-      <section class="kart personel-kart">
-        <h2>En Çok İhlal Yapan Personeller</h2>
-        @if (personelIstatistikleri().length === 0) {
-          <p class="bos-personel">Personel eşleşmeli ihlal kaydı yok.</p>
-        } @else {
-          <ul class="personel-listesi">
-            @for (p of personelIstatistikleri().slice(0, 5); track p.personelId; let i = $index) {
-              <li>
-                <span class="sira">{{ i + 1 }}</span>
-                <div class="personel-bilgi">
-                  <strong>{{ p.personelAdi }}</strong>
-                  <span class="meta">{{ p.sicilNo }}@if (p.departman) { · {{ p.departman }} }</span>
-                </div>
-                <div class="personel-ozet">
-                  <span class="adet">{{ p.toplamIhlal }} ihlal</span>
-                  <span class="kategori">{{ p.enCokIhlalKategorisi }}</span>
-                </div>
-              </li>
-            }
-          </ul>
-        }
-      </section>
-    </div>
+      <div class="ust-grid">
+        <section class="kart">
+          <h2>Bölge İstatistikleri</h2>
+          <app-istatistik-grafik [istatistikler]="istatistikler()" (tipSecildi)="grafiktenTipSecildi($event)" />
+        </section>
 
-    <section class="kart">
-      <div class="liste-basligi">
-        <h2>İhlal Kayıtları ({{ filtreliIhlaller().length }})</h2>
-        <div class="liste-aksiyonlar">
-          <div class="filtreler">
-            <select [value]="secilenTip()" (change)="tipFiltresiDegisti($any($event.target).value)">
-              @for (tip of tipSecenekleri(); track tip) {
-                <option [value]="tip">{{ tip === TUMU ? 'Tüm Tipler' : tip }}</option>
+        <section class="kart personel-kart">
+          <h2>En Çok İhlal Yapan Personeller</h2>
+          @if (personelIstatistikleri().length === 0) {
+            <p class="bos-personel">Personel eşleşmeli ihlal kaydı yok.</p>
+          } @else {
+            <ul class="personel-listesi">
+              @for (p of personelIstatistikleri().slice(0, 5); track p.personelId; let i = $index) {
+                <li>
+                  <span class="sira">{{ i + 1 }}</span>
+                  <div class="personel-bilgi">
+                    <strong>{{ p.personelAdi }}</strong>
+                    <span class="meta">{{ p.sicilNo }}@if (p.departman) { · {{ p.departman }} }</span>
+                  </div>
+                  <div class="personel-ozet">
+                    <span class="adet">{{ p.toplamIhlal }} ihlal</span>
+                    <span class="kategori">{{ p.enCokIhlalKategorisi }}</span>
+                  </div>
+                </li>
               }
-            </select>
-            <label class="tarih-filtre">
-              <span>Başlangıç</span>
-              <input
-                type="date"
-                [value]="baslangicTarihi()"
-                (change)="baslangicTarihiDegisti($any($event.target).value)"
-              />
-            </label>
-            <label class="tarih-filtre">
-              <span>Bitiş</span>
-              <input
-                type="date"
-                [value]="bitisTarihi()"
-                (change)="bitisTarihiDegisti($any($event.target).value)"
-              />
-            </label>
-          </div>
-          <button type="button" class="export-butonu" (click)="csvIndir()" [disabled]="filtreliIhlaller().length === 0">
-            Excel / CSV İndir
-          </button>
-        </div>
+            </ul>
+          }
+        </section>
       </div>
-      <app-ihlal-listesi
-        [ihlaller]="filtreliIhlaller()"
-        [cozulebilirMi]="true"
-        [cozuluyorId]="cozuluyorId()"
-        (satirSecildi)="satirSecildi($event)"
-        (cozuldu)="ihlaliCoz($event)"
-      />
-    </section>
-  }
-</main>
+
+      <section class="kart">
+        <div class="liste-basligi">
+          <h2>İhlal Kayıtları ({{ filtreliIhlaller().length }})</h2>
+          <div class="liste-aksiyonlar">
+            <div class="filtreler">
+              <select [value]="secilenTip()" (change)="tipFiltresiDegisti($any($event.target).value)">
+                @for (tip of tipSecenekleri(); track tip) {
+                  <option [value]="tip">{{ tip === TUMU ? 'Tüm Tipler' : tip }}</option>
+                }
+              </select>
+              <label class="tarih-filtre">
+                <span>Başlangıç</span>
+                <input
+                  type="date"
+                  [value]="baslangicTarihi()"
+                  (change)="baslangicTarihiDegisti($any($event.target).value)"
+                />
+              </label>
+              <label class="tarih-filtre">
+                <span>Bitiş</span>
+                <input
+                  type="date"
+                  [value]="bitisTarihi()"
+                  (change)="bitisTarihiDegisti($any($event.target).value)"
+                />
+              </label>
+            </div>
+            <button type="button" class="export-butonu" (click)="csvIndir()" [disabled]="filtreliIhlaller().length === 0">
+              Excel / CSV İndir
+            </button>
+          </div>
+        </div>
+        <app-ihlal-listesi
+          [ihlaller]="filtreliIhlaller()"
+          [cozulebilirMi]="true"
+          [cozuluyorId]="cozuluyorId()"
+          (satirSecildi)="satirSecildi($event)"
+          (cozuldu)="ihlaliCoz($event)"
+        />
+      </section>
+    }
+  </main>
+</app-panel-shell>
 
 <app-ihlal-detay-modal [ihlal]="secilenIhlal()" [yetkiliMi]="false" (kapat)="modaliKapat()" />

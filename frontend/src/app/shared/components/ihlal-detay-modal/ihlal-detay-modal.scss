@@ -1,7 +1,7 @@
 .arka-plan {
   position: fixed;
   inset: 0;
-  background: rgba(15, 39, 64, 0.65);
+  background: rgba(28, 28, 28, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,10 +15,10 @@
   max-width: 480px;
   max-height: 90vh;
   overflow-y: auto;
-  background: #ffffff;
-  border-radius: 16px;
+  background: var(--erdemir-white);
+  border-radius: var(--erdemir-radius);
   padding: 1.5rem;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--erdemir-shadow);
 }
 
 .kapat-butonu {
@@ -29,13 +29,13 @@
   height: 32px;
   border: none;
   border-radius: 50%;
-  background: #f6f8fa;
-  color: #33404d;
+  background: var(--erdemir-pink-bg);
+  color: var(--erdemir-text);
   font-size: 1rem;
   cursor: pointer;
 
   &:hover {
-    background: #e3e8ec;
+    background: #f0e0e4;
   }
 }
 
@@ -43,8 +43,8 @@
   width: 100%;
   max-height: 320px;
   object-fit: contain;
-  background: #0f2740;
-  border-radius: 10px;
+  background: var(--erdemir-bg-dark);
+  border-radius: var(--erdemir-radius);
   margin-bottom: 1rem;
 }
 
@@ -63,11 +63,11 @@
   }
 
   .etiket {
-    color: #6b7785;
+    color: var(--erdemir-text-muted);
   }
 
   .deger {
-    color: #33404d;
+    color: var(--erdemir-text);
     font-weight: 600;
   }
 }
@@ -83,7 +83,7 @@
 
   &.hatali {
     background: #fdecea;
-    color: #c0392b;
+    color: var(--erdemir-red);
   }
 
   &.cozuldu {
@@ -96,14 +96,14 @@
   width: 100%;
   padding: 0.75rem;
   border: none;
-  border-radius: 8px;
-  background: #c0392b;
-  color: white;
+  border-radius: var(--erdemir-radius);
+  background: var(--erdemir-red);
+  color: var(--erdemir-white);
   font-weight: 700;
   cursor: pointer;
 
   &:hover {
-    opacity: 0.9;
+    background: var(--erdemir-red-hover);
   }
 }
 
@@ -115,12 +115,12 @@
   label {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #33404d;
+    color: var(--erdemir-text);
   }
 
   textarea {
-    border: 1px solid #d3dae1;
-    border-radius: 8px;
+    border: 1px solid var(--erdemir-border);
+    border-radius: 4px;
     padding: 0.6rem;
     font-family: inherit;
     font-size: 0.85rem;
@@ -128,7 +128,7 @@
 
     &:focus {
       outline: none;
-      border-color: #1a4a6e;
+      border-color: var(--erdemir-red);
     }
   }
 }
@@ -141,7 +141,7 @@
     flex: 1;
     padding: 0.6rem;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--erdemir-radius);
     font-weight: 700;
     cursor: pointer;
 
@@ -152,20 +152,20 @@
   }
 
   .iptal-butonu {
-    background: #f6f8fa;
-    color: #33404d;
+    background: var(--erdemir-pink-bg);
+    color: var(--erdemir-text);
 
     &:hover:not(:disabled) {
-      background: #e3e8ec;
+      background: #f0e0e4;
     }
   }
 
   .onayla-butonu {
-    background: #c0392b;
-    color: white;
+    background: var(--erdemir-red);
+    color: var(--erdemir-white);
 
     &:hover:not(:disabled) {
-      opacity: 0.9;
+      background: var(--erdemir-red-hover);
     }
   }
 }

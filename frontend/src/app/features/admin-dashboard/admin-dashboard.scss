@@ -3,17 +3,19 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem 2rem;
-  background: #0f2740;
-  color: white;
+  background: var(--erdemir-white);
+  border-bottom: 3px solid var(--erdemir-red);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
   h1 {
     margin: 0;
     font-size: 1.25rem;
+    color: var(--erdemir-blue-dark);
   }
 
   p {
     margin: 0.15rem 0 0;
-    color: #b9c6d4;
+    color: var(--erdemir-text-muted);
     font-size: 0.85rem;
   }
 
@@ -22,20 +24,33 @@
     gap: 0.6rem;
   }
 
-  button {
+  .birincil-buton,
+  .ikincil-buton {
     padding: 0.55rem 1.1rem;
-    border: none;
-    border-radius: 8px;
-    background: #f6a821;
-    color: #0f2740;
+    border-radius: var(--erdemir-radius);
     font-weight: 700;
     cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .birincil-buton {
+    border: none;
+    background: var(--erdemir-red);
+    color: var(--erdemir-white);
+
+    &:hover {
+      background: var(--erdemir-red-hover);
+    }
   }
 
   .ikincil-buton {
     background: transparent;
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    color: var(--erdemir-red);
+    border: 1px solid var(--erdemir-red);
+
+    &:hover {
+      background: var(--erdemir-pink-bg);
+    }
   }
 }
 
@@ -49,21 +64,26 @@
 }
 
 .kart {
+  background: var(--erdemir-white);
+  border-radius: var(--erdemir-radius);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+
   h2 {
     margin: 0 0 1rem;
     font-size: 1.05rem;
-    color: #0f2740;
+    color: var(--erdemir-blue-dark);
   }
 }
 
 .yukleniyor,
 .genel-hata {
   text-align: center;
-  color: #6b7785;
+  color: var(--erdemir-text-muted);
 }
 
 .genel-hata {
-  color: #c0392b;
+  color: var(--erdemir-red);
 }
 
 .liste-basligi {
@@ -84,10 +104,15 @@
   select,
   input[type='date'] {
     padding: 0.45rem 0.6rem;
-    border: 1px solid #d3dae1;
-    border-radius: 8px;
+    border: 1px solid var(--erdemir-border);
+    border-radius: 4px;
     font-size: 0.85rem;
-    background: white;
+    background: var(--erdemir-white);
+
+    &:focus {
+      outline: none;
+      border-color: var(--erdemir-red);
+    }
   }
 
   .tarih-filtre {
@@ -95,7 +120,7 @@
     flex-direction: column;
     gap: 0.15rem;
     font-size: 0.75rem;
-    color: #5a6b7b;
+    color: var(--erdemir-text-muted);
 
     span {
       padding-left: 0.15rem;
@@ -104,10 +129,7 @@
 }
 
 .kullanici-formu-karti {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  padding: 1.5rem;
+  border-left: 4px solid var(--erdemir-red);
 }
 
 .kullanici-formu {
@@ -124,15 +146,20 @@
     label {
       font-size: 0.78rem;
       font-weight: 600;
-      color: #33404d;
+      color: var(--erdemir-text);
     }
 
     input,
     select {
       padding: 0.55rem 0.65rem;
-      border: 1px solid #d3dae1;
-      border-radius: 8px;
+      border: 1px solid var(--erdemir-border);
+      border-radius: 4px;
       font-size: 0.9rem;
+
+      &:focus {
+        outline: none;
+        border-color: var(--erdemir-red);
+      }
     }
   }
 
@@ -140,14 +167,14 @@
     grid-column: 1 / -1;
     margin: 0;
     padding: 0.6rem 0.75rem;
-    border-radius: 8px;
+    border-radius: 4px;
     background: #e5f6ea;
     color: #1e7d3a;
     font-size: 0.85rem;
 
     &.hata {
       background: #fdecea;
-      color: #c0392b;
+      color: var(--erdemir-red);
     }
   }
 
@@ -156,15 +183,28 @@
     justify-self: start;
     padding: 0.65rem 1.5rem;
     border: none;
-    border-radius: 8px;
-    background: #1a4a6e;
-    color: white;
+    border-radius: var(--erdemir-radius);
+    background: var(--erdemir-red);
+    color: var(--erdemir-white);
     font-weight: 700;
     cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--erdemir-red-hover);
+    }
 
     &:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
+  }
+}
+
+@media (max-width: 768px) {
+  .panel-basligi {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
   }
 }

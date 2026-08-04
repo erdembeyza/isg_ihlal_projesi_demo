@@ -3,7 +3,14 @@ import { adminGuard } from './core/guards/admin.guard';
 import { foremanGuard } from './core/guards/foreman.guard';
 
 export const routes: Routes = [
-  { path: 'giris', loadComponent: () => import('./features/login/login').then((m) => m.Login) },
+  {
+    path: '',
+    loadComponent: () => import('./features/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'giris',
+    loadComponent: () => import('./features/login/login').then((m) => m.Login),
+  },
   {
     path: 'yonetici',
     loadComponent: () =>
@@ -16,6 +23,5 @@ export const routes: Routes = [
       import('./features/foreman-dashboard/foreman-dashboard').then((m) => m.ForemanDashboard),
     canActivate: [foremanGuard],
   },
-  { path: '', pathMatch: 'full', redirectTo: 'giris' },
-  { path: '**', redirectTo: 'giris' },
+  { path: '**', redirectTo: '' },
 ];

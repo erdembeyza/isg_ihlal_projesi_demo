@@ -13,6 +13,7 @@ import {
 import { IhlalListesiComponent } from '../../shared/components/ihlal-listesi/ihlal-listesi';
 import { IstatistikGrafikComponent } from '../../shared/components/istatistik-grafik/istatistik-grafik';
 import { IhlalDetayModalComponent } from '../../shared/components/ihlal-detay-modal/ihlal-detay-modal';
+import { PanelShell } from '../../shared/layout/panel-shell/panel-shell';
 
 const TUMU = 'TÜMÜ';
 const CANLI_YENILEME_MS = 5000;
@@ -32,7 +33,7 @@ type RiskDurumu = {
 @Component({
   selector: 'app-foreman-dashboard',
   standalone: true,
-  imports: [IhlalListesiComponent, IstatistikGrafikComponent, IhlalDetayModalComponent],
+  imports: [IhlalListesiComponent, IstatistikGrafikComponent, IhlalDetayModalComponent, PanelShell],
   templateUrl: './foreman-dashboard.html',
   styleUrl: './foreman-dashboard.scss',
 })
@@ -231,6 +232,6 @@ export class ForemanDashboard {
 
   cikisYap(): void {
     this.authService.logout();
-    this.router.navigate(['/giris']);
+    this.router.navigate(['/']);
   }
 }
