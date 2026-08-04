@@ -2,11 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Ihlal, IhlalIstatistik, IhlalRedRequest } from '../models/ihlal.model';
+import { Ihlal, IhlalIstatistik, IhlalRedRequest, PersonelIstatistik } from '../models/ihlal.model';
 
 /**
  * MODUL-2 (tasarim_mimari.md): /api/ihlaller uclarina karsilik gelen HTTP
- * cagrilari. Rol bazli kapsam (formen: kendi bolgesi + blurlu foto,
+ * cagrilari. Rol bazli kapsam (formen: kendi bolgesi,
  * yonetici: tum fabrika + orijinal foto) tamamen backend'de (JWT'den
  * cozulen AuthenticatedUser) uygulanir; bu servis sadece cagriyi yapar.
  */
@@ -30,8 +30,16 @@ export class IhlalService {
     return this.http.get<IhlalIstatistik[]>(`${environment.apiUrl}/ihlaller/istatistik`);
   }
 
+  personelIstatistik(): Observable<PersonelIstatistik[]> {
+    return this.http.get<PersonelIstatistik[]>(`${environment.apiUrl}/ihlaller/istatistik/personel`);
+  }
+
   reddet(id: number, istek: IhlalRedRequest): Observable<Ihlal> {
     return this.http.post<Ihlal>(`${environment.apiUrl}/ihlaller/${id}/reddet`, istek);
+  }
+
+  coz(id: number): Observable<Ihlal> {
+    return this.http.post<Ihlal>(`${environment.apiUrl}/ihlaller/${id}/coz`, {});
   }
 
   /** Backend'in donduru "/uploads/..." bagil yolunu, JWT ile korunan

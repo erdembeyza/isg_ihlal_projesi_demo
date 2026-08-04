@@ -50,8 +50,8 @@ Panel: `http://localhost:4200`
 
 | Kullanıcı | Şifre | Rol |
 |---|---|---|
-| `admin` | `Admin123!` | ISG_YONETICI (tüm fabrika, orijinal foto) |
-| `formen1` | `Formen123!` | FORMEN (kendi bölgesi, blurlu foto) |
+| `admin` | `Admin123!` | ISG_YONETICI (tüm fabrika) |
+| `formen1` | `Formen123!` | FORMEN (kendi bölgesi) |
 
 > Yalnızca geliştirme/test içindir; üretimde değiştirilmelidir.
 

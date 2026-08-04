@@ -1,10 +1,10 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { IhlalService } from '../../../core/services/ihlal.service';
-import { Ihlal } from '../../../core/models/ihlal.model';
+import { Ihlal, durumEtiketi } from '../../../core/models/ihlal.model';
 import { AuthImgDirective } from '../../../core/directives/auth-img.directive';
 
-type SiralamaAlani = 'tespitZamani' | 'bolgeAdi' | 'ihlalTipiAdi';
+type SiralamaAlani = 'tespitZamani' | 'bolgeAdi' | 'ihlalTipiAdi' | 'personelAdi';
 
 const SAYFA_BOYUTU = 8;
 
@@ -23,9 +23,14 @@ const SAYFA_BOYUTU = 8;
 })
 export class IhlalListesiComponent {
   protected readonly ihlalService = inject(IhlalService);
+  protected readonly durumEtiketi = durumEtiketi;
 
   readonly ihlaller = input.required<Ihlal[]>();
+  /** Formen panelinde AKTIF ihlaller icin "Cozuldu Isaretle" butonu gosterilir. */
+  readonly cozulebilirMi = input(false);
+  readonly cozuluyorId = input<number | null>(null);
   readonly satirSecildi = output<Ihlal>();
+  readonly cozuldu = output<Ihlal>();
 
   protected readonly sayfa = signal(0);
   protected readonly siralamaAlani = signal<SiralamaAlani>('tespitZamani');
@@ -35,8 +40,10 @@ export class IhlalListesiComponent {
     const alan = this.siralamaAlani();
     const yon = this.siralamaYonu() === 'asc' ? 1 : -1;
     return [...this.ihlaller()].sort((a, b) => {
-      if (a[alan] < b[alan]) return -1 * yon;
-      if (a[alan] > b[alan]) return 1 * yon;
+      const aDeger = a[alan] ?? '';
+      const bDeger = b[alan] ?? '';
+      if (aDeger < bDeger) return -1 * yon;
+      if (aDeger > bDeger) return 1 * yon;
       return 0;
     });
   });
@@ -68,5 +75,13 @@ export class IhlalListesiComponent {
 
   sonrakiSayfa(): void {
     this.sayfa.set(Math.min(this.toplamSayfa() - 1, this.gecerliSayfa() + 1));
+  }
+
+  cozTiklandi(event: MouseEvent, ihlal: Ihlal): void {
+    event.stopPropagation();
+    if (ihlal.durum !== 'AKTIF' || this.cozuluyorId() === ihlal.id) {
+      return;
+    }
+    this.cozuldu.emit(ihlal);
   }
 }

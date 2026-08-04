@@ -12,6 +12,12 @@
               <span class="ok">{{ siralamaYonu() === 'asc' ? '▲' : '▼' }}</span>
             }
           </th>
+          <th (click)="siralaAlaninaGore('personelAdi')" class="siralanabilir">
+            Personel / Sicil No
+            @if (siralamaAlani() === 'personelAdi') {
+              <span class="ok">{{ siralamaYonu() === 'asc' ? '▲' : '▼' }}</span>
+            }
+          </th>
           <th (click)="siralaAlaninaGore('ihlalTipiAdi')" class="siralanabilir">
             İhlal Tipi
             @if (siralamaAlani() === 'ihlalTipiAdi') {
@@ -34,12 +40,38 @@
               <img [appAuthImg]="ihlalService.fotoTamUrl(ihlal.fotoUrl)" alt="İhlal kanıtı küçük resmi" class="kucuk-resim" />
             </td>
             <td>{{ ihlal.bolgeAdi }}</td>
+            <td>
+              @if (ihlal.personelAdi) {
+                <div class="personel-hucre">
+                  <span class="personel-adi">{{ ihlal.personelAdi }}</span>
+                  <span class="sicil">{{ ihlal.personelSicilNo }}</span>
+                </div>
+              } @else {
+                <span class="atanmamis">—</span>
+              }
+            </td>
             <td>{{ ihlal.ihlalTipiAdi }}</td>
             <td>{{ ihlal.tespitZamani | date: 'dd.MM.yyyy HH:mm' }}</td>
             <td>
-              <span class="durum-etiketi" [class.hatali]="ihlal.durum === 'HATALI_TESPIT'">
-                {{ ihlal.durum === 'AKTIF' ? 'Aktif' : 'Hatalı Tespit' }}
-              </span>
+              <div class="durum-hucre">
+                <span
+                  class="durum-etiketi"
+                  [class.hatali]="ihlal.durum === 'HATALI_TESPIT'"
+                  [class.cozuldu]="ihlal.durum === 'COZULDU'"
+                >
+                  {{ durumEtiketi(ihlal.durum) }}
+                </span>
+                @if (cozulebilirMi() && ihlal.durum === 'AKTIF') {
+                  <button
+                    type="button"
+                    class="coz-butonu"
+                    [disabled]="cozuluyorId() === ihlal.id"
+                    (click)="cozTiklandi($event, ihlal)"
+                  >
+                    {{ cozuluyorId() === ihlal.id ? '…' : 'Çözüldü İşaretle' }}
+                  </button>
+                }
+              </div>
             </td>
           </tr>
         }

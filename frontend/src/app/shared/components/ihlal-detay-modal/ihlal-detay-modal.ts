@@ -2,11 +2,11 @@ import { DatePipe } from '@angular/common';
 import { Component, inject, input, output, signal } from '@angular/core';
 import { AuthImgDirective } from '../../../core/directives/auth-img.directive';
 import { IhlalService } from '../../../core/services/ihlal.service';
-import { Ihlal } from '../../../core/models/ihlal.model';
+import { Ihlal, durumEtiketi } from '../../../core/models/ihlal.model';
 
 /**
  * COMPONENT-6 (tasarim_mimari.md): secilen ihlalin fotografini (role gore
- * orijinal/blurlu, AuthImgDirective ile), tespit zamanini ve bolgesini
+ * orijinal, AuthImgDirective ile), tespit zamanini ve bolgesini
  * buyuk gorunumde sunan; yoneticiler icin "Reddet" aksiyonunu barindiran
  * modal bilesen. API cagrisini (reddet) yapmaz; sadece disariya bildirir,
  * gercek istek ve liste yenilemesi ust dashboard bilesenine aittir.
@@ -20,6 +20,7 @@ import { Ihlal } from '../../../core/models/ihlal.model';
 })
 export class IhlalDetayModalComponent {
   protected readonly ihlalService = inject(IhlalService);
+  protected readonly durumEtiketi = durumEtiketi;
 
   readonly ihlal = input.required<Ihlal | null>();
   readonly yetkiliMi = input<boolean>(false);

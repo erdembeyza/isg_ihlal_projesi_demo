@@ -11,6 +11,16 @@
           <span class="deger">{{ kayit.bolgeAdi }}</span>
         </div>
         <div class="satir">
+          <span class="etiket">Personel / Sicil</span>
+          <span class="deger">
+            @if (kayit.personelAdi) {
+              {{ kayit.personelAdi }} ({{ kayit.personelSicilNo }})
+            } @else {
+              —
+            }
+          </span>
+        </div>
+        <div class="satir">
           <span class="etiket">İhlal Tipi</span>
           <span class="deger">{{ kayit.ihlalTipiAdi }}</span>
         </div>
@@ -20,8 +30,12 @@
         </div>
         <div class="satir">
           <span class="etiket">Durum</span>
-          <span class="durum-etiketi" [class.hatali]="kayit.durum === 'HATALI_TESPIT'">
-            {{ kayit.durum === 'AKTIF' ? 'Aktif' : 'Hatalı Tespit' }}
+          <span
+            class="durum-etiketi"
+            [class.hatali]="kayit.durum === 'HATALI_TESPIT'"
+            [class.cozuldu]="kayit.durum === 'COZULDU'"
+          >
+            {{ durumEtiketi(kayit.durum) }}
           </span>
         </div>
       </div>
