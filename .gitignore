@@ -14,7 +14,10 @@ backend/.idea/
 backend/.classpath
 backend/.project
 backend/.settings/
+# Kanit / yuklenen gorseller (GitHub'a gitmez)
 backend/uploads/
+backend/uploads/**
+**/finetune-havuz/
 
 # --- Frontend (Angular/Node) ---
 frontend/node_modules/
@@ -28,9 +31,31 @@ ai-core/src/__pycache__/
 ai-core/*.pyc
 ai-core/*.pt
 ai-core/models/*.pt
-ai-core/test_videos/*.mp4
-ai-core/test_videos/*.avi
+
+# Test videolari, kamera ekran goruntuleri, debug kanit fotograflari
+ai-core/test_videos/*
+!ai-core/test_videos/.gitkeep
 ai-core/debug_output/
+ai-core/debug_output/**
+
+# AI Core / backend altinda elde edilen medya (kanit, ekran goruntusu, video)
+ai-core/**/*.jpg
+ai-core/**/*.jpeg
+ai-core/**/*.png
+ai-core/**/*.webp
+ai-core/**/*.gif
+ai-core/**/*.bmp
+ai-core/**/*.mp4
+ai-core/**/*.avi
+ai-core/**/*.mkv
+ai-core/**/*.mov
+backend/**/*.jpg
+backend/**/*.jpeg
+backend/**/*.png
+backend/**/*.webp
+backend/**/*.gif
+backend/**/*.bmp
+backend/**/*.mp4
 
 # --- Docker ---
 docker-compose.override.yml
