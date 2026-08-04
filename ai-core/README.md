@@ -1,7 +1,7 @@
 # AI Core — Canlı güvenlik kamerası İSG tespit servisi
 
 MODÜL-1: kamera görüntüsünü (RTSP) YOLOv8 ile sürekli analiz eder; baret/yelek
-ihlalini tespit edince kanıt **fotoğrafını** (orijinal + yüzü blurlu) backend’e
+ihlalini tespit edince kanıt **fotoğrafını** backend’e
 `POST /api/ihlaller` ile gönderir. Web paneli bu fotoğrafları anlık listeler.
 
 **Üretim modu:** Kamerayı bir kez `.env` (veya `cameras.json`) içine yazarsın;
@@ -53,16 +53,29 @@ Windows’ta ilk seferde kamera izni isteyebilir — İzin Ver.
 - İhlal olunca panelde **fotoğraf** görünür.
 - Durdurmak: `Ctrl+C` veya pencerede `q`.
 
-### Çoklu kamera
+### Çoklu kamera (PC + telefon)
 
-`cameras.example.json` dosyasını kopyalayıp RTSP adreslerini doldur:
+`cameras.json` hazır: bilgisayar kamerası = Veri Merkezi, telefon = 1. Sicak Haddehane.
 
 ```powershell
 copy cameras.example.json cameras.json
-python -m src.main --cameras cameras.json
+# cameras.json icinde TELEFON_IP yerine telefonunun Wi-Fi IP'sini yaz
+python -m src.main --cameras cameras.json --show
 ```
 
-Her kayıt kendi `bolge_id` ile ayrı thread’de izlenir.
+**Telefonu bağlama (Android — IP Webcam):**
+
+1. Telefona [IP Webcam](https://play.google.com/store/apps/details?id=com.pas.webcam) yükle.
+2. Telefon ile bilgisayar **aynı Wi‑Fi**’de olsun.
+3. Uygulamada **Start server**’a bas.
+4. Ekranda görünen adresi not al (ör. `http://192.168.1.34:8080`).
+5. `cameras.json` içinde `TELEFON_IP` yerine o IP’yi yaz:
+   `"video_source": "http://192.168.1.34:8080/video"`
+6. AI Core’u `--cameras cameras.json` ile başlat.
+
+iPhone için benzer uygulama (ör. **IP Camera** / **EpocCam**) veya bilgisayara DroidCam/Iriun ile sanal kamera da kullanılabilir; OpenCV `http://.../video` veya `rtsp://...` bekler.
+
+Her kayıt kendi `bolge_id` ile ayrı thread’de izlenir; panelde ihlaller ilgili bölge adıyla görünür.
 
 ## Kamera yokken geliştirme (simulasyon)
 
@@ -94,7 +107,6 @@ GOZLUK sınıfı mevcut eğitimde yoktur (BARET / YELEK çalışır).
 | `pipeline.py` | Tespit döngüsü, cooldown, bildirim |
 | `main.py` | CLI / çoklu kamera thread’leri |
 | `ppe_detector.py` | YOLOv8 |
-| `face_blur.py` | KVKK yüz bulanıklaştırma |
 | `backend_client.py` | JWT + POST ihlal |
 
 ## Bilinen sınırlamalar
