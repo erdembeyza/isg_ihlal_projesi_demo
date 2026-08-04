@@ -4,14 +4,16 @@
       <img src="assets/images/oyak-logo.svg" alt="OYAK Maden Metalurji ErdemirOnline" class="marka-logo" />
     </a>
 
-    <nav class="ust-menu" aria-label="Ana menü">
-      <a routerLink="/" routerLinkActive="aktif" [routerLinkActiveOptions]="{ exact: true }">Anasayfa</a>
-      <a href="javascript:void(0)" class="pasif-link">Tanıtım</a>
-      <a href="javascript:void(0)" class="pasif-link">İletişim</a>
-      <a routerLink="/giris" routerLinkActive="aktif" class="cerceveli">Üye Girişi</a>
-      <a href="javascript:void(0)" class="pasif-link">Üyelik Başvurusu</a>
-      <a href="javascript:void(0)" class="cerceveli pasif-link">Başvurularım</a>
-    </nav>
+    @if (!panelModu) {
+      <nav class="ust-menu" aria-label="Ana menü">
+        <a routerLink="/" routerLinkActive="aktif" [routerLinkActiveOptions]="{ exact: true }">Anasayfa</a>
+        <a href="javascript:void(0)" class="pasif-link">Tanıtım</a>
+        <a href="javascript:void(0)" class="pasif-link">İletişim</a>
+        <a routerLink="/giris" routerLinkActive="aktif" class="cerceveli">Üye Girişi</a>
+        <a href="javascript:void(0)" class="pasif-link">Üyelik Başvurusu</a>
+        <a href="javascript:void(0)" class="cerceveli pasif-link">Başvurularım</a>
+      </nav>
+    }
   </div>
 
   <p class="tarih-saat">{{ tarihSaatMetni() }}</p>

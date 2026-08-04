@@ -1,9 +1,11 @@
-import { Component, OnDestroy, computed, signal } from '@angular/core';
+import { Component, Input, OnDestroy, computed, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 /**
  * Erdemir Online extranet üst menü ve marka alanı.
  * Giriş/ana sayfa ile panel sayfalarında ortak kullanılır.
+ *
+ * @Input panelModu - true ise nav menüsü gizlenir (yönetici/formen paneli için).
  */
 @Component({
   selector: 'app-extranet-header',
@@ -13,6 +15,9 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
   styleUrl: './extranet-header.scss',
 })
 export class ExtranetHeader implements OnDestroy {
+  /** Panel modunda nav menüsü gizlenir. */
+  @Input() panelModu = false;
+
   private saatAraligi?: ReturnType<typeof setInterval>;
 
   readonly simdi = signal(new Date());

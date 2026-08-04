@@ -1,39 +1,3 @@
-.panel-basligi {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 2rem;
-  background: var(--erdemir-white);
-  border-bottom: 3px solid var(--erdemir-red);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-
-  h1 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: var(--erdemir-blue-dark);
-  }
-
-  p {
-    margin: 0.15rem 0 0;
-    color: var(--erdemir-text-muted);
-    font-size: 0.85rem;
-  }
-
-  .birincil-buton {
-    padding: 0.55rem 1.1rem;
-    border: none;
-    border-radius: var(--erdemir-radius);
-    background: var(--erdemir-red);
-    color: var(--erdemir-white);
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 0.9rem;
-
-    &:hover {
-      background: var(--erdemir-red-hover);
-    }
-  }
-}
 
 .panel-icerik {
   padding: 2rem;

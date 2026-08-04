@@ -1,6 +1,54 @@
 <div class="panel-shell">
-  <app-extranet-header />
 
+  <!-- ══ Birleşik Panel Üst Barı ══ -->
+  <header class="panel-header" role="banner">
+
+    <!-- Sol: Marka alanı (Amblem + Panel Adı) -->
+    <div class="ph-marka">
+      <img
+        src="assets/images/oyak-logo.svg"
+        alt="OYAK Maden Metalurji"
+        class="ph-oyak-logo"
+      />
+      <div class="ph-marka-ayirici" aria-hidden="true"></div>
+      <div class="ph-erdemir-bilgi">
+        @if (panelAdi) {
+          <span class="ph-panel-adi">{{ panelAdi }}</span>
+        }
+      </div>
+    </div>
+
+    <div class="ph-sol-ayirici" aria-hidden="true"></div>
+
+    <!-- Markanın Hemen Yanı: Kullanıcı bilgisi -->
+    <div class="ph-kullanici" aria-label="Oturum bilgisi">
+      <div class="ph-avatar" aria-hidden="true">
+        {{ kullaniciAdi ? kullaniciAdi[0].toUpperCase() : '?' }}
+      </div>
+      <div class="ph-kullanici-detay">
+        <span class="ph-ad-soyad">{{ kullaniciAdi }}</span>
+        <span class="ph-rol">{{ rolAdi }}</span>
+      </div>
+    </div>
+
+    <!-- Sağ Taraf: Ek Butonlar + Çıkış Yap (Altında Tarih & Saat) -->
+    <div class="ph-sag">
+      <ng-content select="[panelButonlari]" />
+      <div class="ph-cikis-blok">
+        <button class="ph-cikis-btn" (click)="onCikisYap()" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path fill="currentColor"
+              d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+          </svg>
+          Çıkış Yap
+        </button>
+        <span class="ph-tarih-saat" aria-live="polite">{{ tarihSaatMetni() }}</span>
+      </div>
+    </div>
+
+  </header>
+
+  <!-- İçerik -->
   <main class="panel-icerik-alani">
     <ng-content />
   </main>

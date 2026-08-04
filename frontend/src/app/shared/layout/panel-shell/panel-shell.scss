@@ -1,17 +1,188 @@
+/* ── Panel Shell – Birleşik Header Stili ── */
+
 .panel-shell {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   background: var(--erdemir-bg);
+}
 
-  app-extranet-header .extranet-header {
-    background: var(--erdemir-white);
-    border-bottom: 1px solid #eaeaea;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+/* ══ Birleşik Üst Bar ══ */
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.5rem 1.75rem;
+  min-height: 64px;
+  background: var(--erdemir-white);
+  border-bottom: 3px solid var(--erdemir-red);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+/* ── Sol: Marka ── */
+.ph-marka {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.ph-oyak-logo {
+  height: 36px;
+  width: auto;
+}
+
+.ph-marka-ayirici {
+  width: 1px;
+  height: 30px;
+  background: var(--erdemir-border);
+}
+
+.ph-erdemir-bilgi {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ph-panel-adi {
+  font-size: 1.02rem;
+  color: var(--erdemir-red);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.ph-sol-ayirici {
+  width: 1px;
+  height: 32px;
+  background: var(--erdemir-border);
+  flex-shrink: 0;
+}
+
+/* ── Markanın Hemen Yanı: Kullanıcı bilgisi ── */
+.ph-kullanici {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.25rem 0.6rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.ph-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--erdemir-red);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(204, 51, 51, 0.3);
+}
+
+.ph-kullanici-detay {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.ph-ad-soyad {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--erdemir-text);
+  white-space: nowrap;
+}
+
+.ph-rol {
+  font-size: 0.72rem;
+  color: var(--erdemir-text-muted);
+  white-space: nowrap;
+}
+
+/* ── En Sağ: Butonlar + Çıkış Yap + Tarih-Saat ── */
+.ph-sag {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.ph-cikis-blok {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+}
+
+.ph-cikis-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--erdemir-red);
+  border-radius: var(--erdemir-radius);
+  background: var(--erdemir-white);
+  color: var(--erdemir-red);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    background: var(--erdemir-red);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(204, 51, 51, 0.3);
+
+    svg path {
+      fill: #fff;
+    }
   }
 }
 
+.ph-tarih-saat {
+  font-size: 0.72rem;
+  color: var(--erdemir-text-muted);
+  white-space: nowrap;
+  text-align: right;
+  font-weight: 500;
+}
+
+/* ── İçerik Alanı ── */
 .panel-icerik-alani {
   flex: 1;
   width: 100%;
+}
+
+/* ── Mobil ── */
+@media (max-width: 900px) {
+  .panel-header {
+    height: auto;
+    padding: 0.6rem 1rem;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .ph-sol-ayirici {
+    display: none;
+  }
+
+  .ph-kullanici {
+    order: 3;
+    width: 100%;
+  }
+
+  .ph-sag {
+    order: 2;
+    margin-left: auto;
+  }
 }

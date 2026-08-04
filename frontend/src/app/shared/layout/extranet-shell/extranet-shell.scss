@@ -1,37 +1,53 @@
+/* Referans: https://www.erdemironline.com/Extranet/#/
+ * Koyu sanayi arka planı + hafif overlay katmanı
+ */
+
 .extranet-shell {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   position: relative;
-  overflow: hidden;
   background: var(--erdemir-bg-dark);
 }
 
+/* Ana arkaplan: fabrika/sanayi fotoğrafı + koyu gradyan overlay */
 .arkaplan-katmani {
   position: fixed;
   inset: 0;
   background:
-    url('/assets/images/popup-bg.48bbaf43e95291de.png') center / cover no-repeat,
-    linear-gradient(180deg, rgba(28, 28, 28, 0.35) 0%, rgba(28, 28, 28, 0.55) 100%);
+    url('/assets/images/popup-bg.48bbaf43e95291de.png') center / cover no-repeat;
   z-index: 0;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(28, 28, 28, 0.45) 0%,
+      rgba(28, 28, 28, 0.60) 100%
+    );
+  }
 }
 
+/* İkinci overlay: doku/örüntü katmanı */
 .overlay-katmani {
   position: fixed;
   inset: 0;
   background: url('/assets/images/list_bg_overlay.4eda8053c9978fdf.png') center / cover no-repeat;
-  opacity: 0.35;
+  opacity: 0.3;
   z-index: 1;
   pointer-events: none;
 }
 
+/* Sayfa içeriği */
 .extranet-icerik {
   position: relative;
   z-index: 2;
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   padding: 1.5rem 1rem 2rem;
 }

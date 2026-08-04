@@ -1,119 +1,103 @@
-<app-panel-shell>
-  <header class="panel-basligi">
-    <div>
-      <h1>İSG Yönetici Paneli</h1>
-      <p>Hoş geldiniz, {{ authService.currentUser()?.adSoyad }} — Tüm fabrika görünümü</p>
-    </div>
-    <div class="baslik-butonlari">
-      <button class="ikincil-buton" (click)="kullaniciFormunuAcKapat()">
-        {{ kullaniciFormuAcik() ? 'Formu Kapat' : '+ Yeni Kullanıcı' }}
-      </button>
-      <button class="birincil-buton" (click)="cikisYap()">Çıkış Yap</button>
-    </div>
-  </header>
+<app-panel-shell
+  panelAdi="İSG Yönetici Paneli"
+  [kullaniciAdi]="authService.currentUser()?.adSoyad || 'Yönetici'"
+  rolAdi="İSG Yöneticisi"
+  (cikis)="cikisYap()"
+>
+  <button panelButonlari class="ikincil-buton" (click)="kullaniciFormunuAcKapat()">
+    {{ kullaniciFormuAcik() ? 'Formu Kapat' : '+ Yeni Kullanıcı' }}
+  </button>
 
   <main class="panel-icerik">
     @if (kullaniciFormuAcik()) {
-      <section class="kart kullanici-formu-karti">
-        <h2>Yeni Formen / Yönetici Kullanıcısı Ekle</h2>
-        <form [formGroup]="kullaniciForm" (ngSubmit)="kullaniciOlustur()" class="kullanici-formu">
-          <div class="form-alani">
-            <label for="kaKullaniciAdi">Kullanıcı Adı</label>
-            <input id="kaKullaniciAdi" type="text" formControlName="kullaniciAdi" />
-          </div>
-          <div class="form-alani">
-            <label for="kaSifre">Parola</label>
-            <input id="kaSifre" type="password" formControlName="sifre" />
-          </div>
-          <div class="form-alani">
-            <label for="kaAdSoyad">Ad Soyad</label>
-            <input id="kaAdSoyad" type="text" formControlName="adSoyad" />
-          </div>
-          <div class="form-alani">
-            <label for="kaRol">Rol</label>
-            <select id="kaRol" formControlName="rol">
-              <option value="FORMEN">FORMEN</option>
-              <option value="ISG_YONETICI">ISG_YONETICI</option>
-            </select>
-          </div>
-          @if (kullaniciForm.controls.rol.value === 'FORMEN') {
-            <div class="form-alani">
-              <label for="kaBolge">Bölge</label>
-              <select id="kaBolge" formControlName="bolgeId">
-                <option [value]="null">Seçiniz…</option>
-                @for (bolge of bolgeler(); track bolge.id) {
-                  <option [value]="bolge.id">{{ bolge.bolgeAdi }}</option>
-                }
-              </select>
-            </div>
-          }
+    <section class="kart kullanici-formu-karti">
+      <h2>Yeni Formen / Yönetici Kullanıcısı Ekle</h2>
+      <form [formGroup]="kullaniciForm" (ngSubmit)="kullaniciOlustur()" class="kullanici-formu">
+        <div class="form-alani">
+          <label for="kaKullaniciAdi">Kullanıcı Adı</label>
+          <input id="kaKullaniciAdi" type="text" formControlName="kullaniciAdi" />
+        </div>
+        <div class="form-alani">
+          <label for="kaSifre">Parola</label>
+          <input id="kaSifre" type="password" formControlName="sifre" />
+        </div>
+        <div class="form-alani">
+          <label for="kaAdSoyad">Ad Soyad</label>
+          <input id="kaAdSoyad" type="text" formControlName="adSoyad" />
+        </div>
+        <div class="form-alani">
+          <label for="kaRol">Rol</label>
+          <select id="kaRol" formControlName="rol">
+            <option value="FORMEN">FORMEN</option>
+            <option value="ISG_YONETICI">ISG_YONETICI</option>
+          </select>
+        </div>
+        @if (kullaniciForm.controls.rol.value === 'FORMEN') {
+        <div class="form-alani">
+          <label for="kaBolge">Bölge</label>
+          <select id="kaBolge" formControlName="bolgeId">
+            <option [value]="null">Seçiniz…</option>
+            @for (bolge of bolgeler(); track bolge.id) {
+            <option [value]="bolge.id">{{ bolge.bolgeAdi }}</option>
+            }
+          </select>
+        </div>
+        }
 
-          @if (kullaniciFormuMesaji(); as mesaj) {
-            <p class="form-mesaji" [class.hata]="mesaj.tur === 'hata'">{{ mesaj.metin }}</p>
-          }
+        @if (kullaniciFormuMesaji(); as mesaj) {
+        <p class="form-mesaji" [class.hata]="mesaj.tur === 'hata'">{{ mesaj.metin }}</p>
+        }
 
-          <button type="submit" class="gonder-butonu" [disabled]="kullaniciFormuGonderiliyor()">
-            {{ kullaniciFormuGonderiliyor() ? 'Oluşturuluyor…' : 'Kullanıcı Oluştur' }}
-          </button>
-        </form>
-      </section>
+        <button type="submit" class="gonder-butonu" [disabled]="kullaniciFormuGonderiliyor()">
+          {{ kullaniciFormuGonderiliyor() ? 'Oluşturuluyor…' : 'Kullanıcı Oluştur' }}
+        </button>
+      </form>
+    </section>
     }
 
     @if (hataMesaji(); as hata) {
-      <p class="genel-hata">{{ hata }}</p>
+    <p class="genel-hata">{{ hata }}</p>
     }
 
     @if (yukleniyor()) {
-      <p class="yukleniyor">Veriler yükleniyor…</p>
+    <p class="yukleniyor">Veriler yükleniyor…</p>
     } @else {
-      <section class="kart">
-        <h2>İhlal İstatistikleri</h2>
-        <app-istatistik-grafik [istatistikler]="filtreliIstatistikler()" (tipSecildi)="grafiktenTipSecildi($event)" />
-      </section>
+    <section class="kart">
+      <h2>İhlal İstatistikleri</h2>
+      <app-istatistik-grafik [istatistikler]="filtreliIstatistikler()" (tipSecildi)="grafiktenTipSecildi($event)" />
+    </section>
 
-      <section class="kart">
-        <div class="liste-basligi">
-          <h2>İhlal Kayıtları ({{ filtreliIhlaller().length }})</h2>
-          <div class="filtreler">
-            <select [value]="secilenBolge()" (change)="bolgeFiltresiDegisti($any($event.target).value)">
-              <option [value]="TUMU">Tüm Bölgeler</option>
-              @for (bolge of bolgeler(); track bolge.id) {
-                <option [value]="bolge.bolgeAdi">{{ bolge.bolgeAdi }}</option>
-              }
-            </select>
-            <select [value]="secilenTip()" (change)="tipFiltresiDegisti($any($event.target).value)">
-              @for (tip of tipSecenekleri(); track tip) {
-                <option [value]="tip">{{ tip === TUMU ? 'Tüm Tipler' : tip }}</option>
-              }
-            </select>
-            <label class="tarih-filtre">
-              <span>Başlangıç</span>
-              <input
-                type="date"
-                [value]="baslangicTarihi()"
-                (change)="baslangicTarihiDegisti($any($event.target).value)"
-              />
-            </label>
-            <label class="tarih-filtre">
-              <span>Bitiş</span>
-              <input
-                type="date"
-                [value]="bitisTarihi()"
-                (change)="bitisTarihiDegisti($any($event.target).value)"
-              />
-            </label>
-          </div>
+    <section class="kart">
+      <div class="liste-basligi">
+        <h2>İhlal Kayıtları ({{ filtreliIhlaller().length }})</h2>
+        <div class="filtreler">
+          <select [value]="secilenBolge()" (change)="bolgeFiltresiDegisti($any($event.target).value)">
+            <option [value]="TUMU">Tüm Bölgeler</option>
+            @for (bolge of bolgeler(); track bolge.id) {
+            <option [value]="bolge.bolgeAdi">{{ bolge.bolgeAdi }}</option>
+            }
+          </select>
+          <select [value]="secilenTip()" (change)="tipFiltresiDegisti($any($event.target).value)">
+            @for (tip of tipSecenekleri(); track tip) {
+            <option [value]="tip">{{ tip === TUMU ? 'Tüm Tipler' : tip }}</option>
+            }
+          </select>
+          <label class="tarih-filtre">
+            <span>Başlangıç</span>
+            <input type="date" [value]="baslangicTarihi()"
+              (change)="baslangicTarihiDegisti($any($event.target).value)" />
+          </label>
+          <label class="tarih-filtre">
+            <span>Bitiş</span>
+            <input type="date" [value]="bitisTarihi()" (change)="bitisTarihiDegisti($any($event.target).value)" />
+          </label>
         </div>
-        <app-ihlal-listesi [ihlaller]="filtreliIhlaller()" (satirSecildi)="satirSecildi($event)" />
-      </section>
+      </div>
+      <app-ihlal-listesi [ihlaller]="filtreliIhlaller()" (satirSecildi)="satirSecildi($event)" />
+    </section>
     }
   </main>
 </app-panel-shell>
 
-<app-ihlal-detay-modal
-  [ihlal]="secilenIhlal()"
-  [yetkiliMi]="true"
-  [gonderiliyor]="reddetGonderiliyor()"
-  (kapat)="modaliKapat()"
-  (reddet)="ihlaliReddet($event)"
-/>
+<app-ihlal-detay-modal [ihlal]="secilenIhlal()" [yetkiliMi]="true" [gonderiliyor]="reddetGonderiliyor()"
+  (kapat)="modaliKapat()" (reddet)="ihlaliReddet($event)" />

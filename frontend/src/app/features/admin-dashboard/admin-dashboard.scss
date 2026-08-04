@@ -1,56 +1,17 @@
-.panel-basligi {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 2rem;
-  background: var(--erdemir-white);
-  border-bottom: 3px solid var(--erdemir-red);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+.ikincil-buton {
+  padding: 0.45rem 1rem;
+  border-radius: var(--erdemir-radius);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.85rem;
+  background: transparent;
+  color: var(--erdemir-red);
+  border: 1px solid var(--erdemir-red);
+  transition: all 0.15s ease;
+  white-space: nowrap;
 
-  h1 {
-    margin: 0;
-    font-size: 1.25rem;
-    color: var(--erdemir-blue-dark);
-  }
-
-  p {
-    margin: 0.15rem 0 0;
-    color: var(--erdemir-text-muted);
-    font-size: 0.85rem;
-  }
-
-  .baslik-butonlari {
-    display: flex;
-    gap: 0.6rem;
-  }
-
-  .birincil-buton,
-  .ikincil-buton {
-    padding: 0.55rem 1.1rem;
-    border-radius: var(--erdemir-radius);
-    font-weight: 700;
-    cursor: pointer;
-    font-size: 0.9rem;
-  }
-
-  .birincil-buton {
-    border: none;
-    background: var(--erdemir-red);
-    color: var(--erdemir-white);
-
-    &:hover {
-      background: var(--erdemir-red-hover);
-    }
-  }
-
-  .ikincil-buton {
-    background: transparent;
-    color: var(--erdemir-red);
-    border: 1px solid var(--erdemir-red);
-
-    &:hover {
-      background: var(--erdemir-pink-bg);
-    }
+  &:hover {
+    background: var(--erdemir-pink-bg);
   }
 }
 
@@ -59,7 +20,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -197,14 +158,5 @@
       opacity: 0.6;
       cursor: not-allowed;
     }
-  }
-}
-
-@media (max-width: 768px) {
-  .panel-basligi {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    padding: 1rem;
   }
 }
