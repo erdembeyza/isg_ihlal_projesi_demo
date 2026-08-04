@@ -1,0 +1,89 @@
+<app-extranet-shell>
+  <div class="iletisim-icerik">
+    <div class="iletisim-karti">
+      <h1 class="sayfa-baslik">İletişim</h1>
+
+      <div class="iletisim-grid">
+        <!-- Sol: İletişim Bilgileri -->
+        <section class="bilgi-bolumu">
+          <div class="bilgi-karti">
+            <div class="bilgi-satiri">
+              <span class="bilgi-ikon">📍</span>
+              <div>
+                <strong>Adres</strong>
+                <p>Ereğli Demir ve Çelik Fabrikaları T.A.Ş.<br />
+                   Müdafaa Cad. No: 2, 67330 Kdz. Ereğli / Zonguldak</p>
+              </div>
+            </div>
+
+            <div class="bilgi-satiri">
+              <span class="bilgi-ikon">📞</span>
+              <div>
+                <strong>Telefon</strong>
+                <p>+90 (372) 323 50 00</p>
+              </div>
+            </div>
+
+            <div class="bilgi-satiri">
+              <span class="bilgi-ikon">📠</span>
+              <div>
+                <strong>Faks</strong>
+                <p>+90 (372) 323 56 35</p>
+              </div>
+            </div>
+
+            <div class="bilgi-satiri">
+              <span class="bilgi-ikon">🌐</span>
+              <div>
+                <strong>Web Sitesi</strong>
+                <p><a href="https://www.erdemir.com.tr" target="_blank" rel="noopener">www.erdemir.com.tr</a></p>
+              </div>
+            </div>
+
+            <div class="bilgi-satiri">
+              <span class="bilgi-ikon">✉️</span>
+              <div>
+                <strong>E-posta</strong>
+                <p>erdemironline&#64;erdemir.com.tr</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="destek-kutusu">
+            <h2>Teknik Destek</h2>
+            <p>ErdemirOnline ile ilgili teknik sorunlarınız için bizimle iletişime geçebilirsiniz.</p>
+            <p class="destek-saat">Çalışma Saatleri: Hafta içi 08:00 – 17:00</p>
+          </div>
+        </section>
+
+        <!-- Sağ: İletişim Formu -->
+        <section class="form-bolumu">
+          <h2>Bize Mesaj Gönderin</h2>
+          <form class="iletisim-formu" (submit)="$event.preventDefault()">
+            <div class="form-alani">
+              <label for="adSoyad">Ad Soyad *</label>
+              <input id="adSoyad" type="text" placeholder="Adınız ve soyadınız" />
+            </div>
+            <div class="form-alani">
+              <label for="email">E-posta *</label>
+              <input id="email" type="email" placeholder="ornek@sirket.com" />
+            </div>
+            <div class="form-alani">
+              <label for="telefon">Telefon</label>
+              <input id="telefon" type="tel" placeholder="+90 (___) ___ __ __" />
+            </div>
+            <div class="form-alani">
+              <label for="konu">Konu *</label>
+              <input id="konu" type="text" placeholder="Mesajınızın konusu" />
+            </div>
+            <div class="form-alani">
+              <label for="mesaj">Mesaj *</label>
+              <textarea id="mesaj" rows="5" placeholder="Mesajınızı buraya yazınız..."></textarea>
+            </div>
+            <button type="submit" class="gonder-butonu">Gönder</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </div>
+</app-extranet-shell>

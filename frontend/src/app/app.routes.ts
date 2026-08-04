@@ -5,11 +5,25 @@ import { foremanGuard } from './core/guards/foreman.guard';
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () => import('./features/login/login').then((m) => m.Login),
+    loadComponent: () => import('./features/anasayfa/anasayfa').then((m) => m.Anasayfa),
   },
   {
     path: 'giris',
     loadComponent: () => import('./features/login/login').then((m) => m.Login),
+  },
+  {
+    path: 'iletisim',
+    loadComponent: () => import('./features/iletisim/iletisim').then((m) => m.Iletisim),
+  },
+  {
+    path: 'uyelik-basvurusu',
+    loadComponent: () =>
+      import('./features/uyelik-basvurusu/uyelik-basvurusu').then((m) => m.UyelikBasvurusu),
+  },
+  {
+    path: 'basvurularim',
+    loadComponent: () =>
+      import('./features/basvurularim/basvurularim').then((m) => m.Basvurularim),
   },
   {
     path: 'yonetici',

@@ -1,0 +1,174 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.basvurularim-icerik {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 2rem 1rem 3rem;
+}
+
+.basvurularim-karti {
+  width: 100%;
+  max-width: 720px;
+  background: rgba(255, 255, 255, 0.97);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.18);
+  padding: 2rem 2.5rem 2.5rem;
+}
+
+.sayfa-baslik {
+  margin: 0 0 0.5rem;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: var(--erdemir-text);
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--erdemir-red);
+  display: inline-block;
+}
+
+.alt-aciklama {
+  margin: 0.75rem 0 1.75rem;
+  font-size: 0.88rem;
+  color: var(--erdemir-text-muted);
+  line-height: 1.6;
+}
+
+/* ── Sorgulama formu ── */
+.sorgulama-formu {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.sorgulama-satirlari {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  align-items: flex-end;
+}
+
+.form-alani {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 160px;
+
+  label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--erdemir-text);
+  }
+
+  input {
+    padding: 0.65rem 0.9rem;
+    border: 1px solid var(--erdemir-border);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: var(--erdemir-text);
+    background: #fff;
+    transition: border-color 0.15s ease;
+
+    &::placeholder {
+      color: rgba(0, 0, 0, 0.4);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--erdemir-red);
+    }
+  }
+}
+
+.sorgula-butonu {
+  min-width: 110px;
+  padding: 0.65rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--erdemir-red);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 6px rgba(204, 51, 51, 0.3);
+  flex-shrink: 0;
+  align-self: flex-end;
+
+  &:hover {
+    background: var(--erdemir-red-hover);
+    box-shadow: 0 3px 10px rgba(204, 51, 51, 0.4);
+  }
+
+  &:active {
+    transform: translateY(1px);
+  }
+}
+
+/* ── Boş durum ── */
+.bos-durum {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--erdemir-text-muted);
+
+  .bos-ikon {
+    font-size: 3rem;
+    margin-bottom: 0.75rem;
+    opacity: 0.6;
+  }
+
+  h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--erdemir-text);
+  }
+
+  p {
+    margin: 0 0 0.4rem;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .bos-alt {
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+
+    a {
+      color: var(--erdemir-red);
+      text-decoration: none;
+      font-weight: 500;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
+/* ── Mobil ── */
+@media (max-width: 640px) {
+  .basvurularim-karti {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .sorgulama-satirlari {
+    flex-direction: column;
+  }
+
+  .form-alani {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sorgula-butonu {
+    width: 100%;
+    text-align: center;
+  }
+}

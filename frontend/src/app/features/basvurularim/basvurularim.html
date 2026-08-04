@@ -1,0 +1,37 @@
+<app-extranet-shell>
+  <div class="basvurularim-icerik">
+    <div class="basvurularim-karti">
+      <h1 class="sayfa-baslik">Başvurularım</h1>
+      <p class="alt-aciklama">
+        Sisteme kayıtlı başvurularınızı aşağıda görüntüleyebilirsiniz.
+        Başvurunuzu sorgulamak için T.C. Kimlik No ve e-posta adresinizi giriniz.
+      </p>
+
+      <!-- Sorgulama formu -->
+      <form class="sorgulama-formu" (submit)="$event.preventDefault()">
+        <div class="sorgulama-satirlari">
+          <div class="form-alani">
+            <label for="bqTc">T.C. Kimlik No</label>
+            <input id="bqTc" type="text" maxlength="11" placeholder="___________" />
+          </div>
+          <div class="form-alani">
+            <label for="bqEmail">E-posta Adresi</label>
+            <input id="bqEmail" type="email" placeholder="ornek@sirket.com" />
+          </div>
+          <button type="submit" class="sorgula-butonu">Sorgula</button>
+        </div>
+      </form>
+
+      <!-- Bilgilendirme alanı (başvuru yokken) -->
+      <div class="bos-durum">
+        <div class="bos-ikon">📋</div>
+        <h2>Başvuru Bulunamadı</h2>
+        <p>Girdiğiniz bilgilere ait kayıtlı başvuru bulunmamaktadır.</p>
+        <p class="bos-alt">
+          Üyelik başvurusu yapmak için
+          <a routerLink="/uyelik-basvurusu">Üyelik Başvurusu</a> sayfasını ziyaret ediniz.
+        </p>
+      </div>
+    </div>
+  </div>
+</app-extranet-shell>

@@ -63,9 +63,9 @@
 
       <div class="form-alt">
         <div class="yardim-linkleri">
-          <a href="javascript:void(0)" class="yardim-link">Parolamı Unuttum</a>
-          <a href="javascript:void(0)" class="yardim-link">Parola Al</a>
-          <a href="javascript:void(0)" class="yardim-link">Kullanıcı Adımı Unuttum</a>
+          <a href="javascript:void(0)" class="yardim-link" (click)="popItGoster()">Parolamı Unuttum</a>
+          <a href="javascript:void(0)" class="yardim-link" (click)="popItGoster()">Parola Al</a>
+          <a href="javascript:void(0)" class="yardim-link" (click)="popItGoster()">Kullanıcı Adımı Unuttum</a>
         </div>
 
         <button type="submit" class="giris-butonu" [disabled]="gonderiliyor()">
@@ -74,4 +74,29 @@
       </div>
     </form>
   </div>
+
+  <!-- ══ Pop-It Mesaj Modalı ══ -->
+  @if (popItAcik()) {
+    <div class="popit-overlay" (click)="popItKapat()">
+      <div class="popit-kutu" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+        <div class="popit-ust">
+          <div class="popit-ikon">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </div>
+          <span class="popit-baslik">Bilgi</span>
+          <button type="button" class="popit-kapat-btn" (click)="popItKapat()" aria-label="Kapat">&times;</button>
+        </div>
+        <div class="popit-govde">
+          <p>{{ popItMesaji() }}</p>
+        </div>
+        <div class="popit-alt">
+          <button type="button" class="popit-tamam-btn" (click)="popItKapat()">Tamam</button>
+        </div>
+      </div>
+    </div>
+  }
 </app-extranet-shell>

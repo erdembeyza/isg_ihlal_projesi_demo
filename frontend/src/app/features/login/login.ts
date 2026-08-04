@@ -24,6 +24,8 @@ export class Login {
   readonly gonderiliyor = signal(false);
   readonly hataMesaji = signal<string | null>(null);
   readonly sifreGorunur = signal(false);
+  readonly popItAcik = signal(false);
+  readonly popItMesaji = signal('Yöneticiniz ile iletişime geçiniz.');
 
   readonly form = this.fb.nonNullable.group({
     kullaniciAdi: ['', [Validators.required]],
@@ -32,6 +34,15 @@ export class Login {
 
   sifreGorunurunuDegistir(): void {
     this.sifreGorunur.update((v) => !v);
+  }
+
+  popItGoster(mesaj = 'Yöneticiniz ile iletişime geçiniz.'): void {
+    this.popItMesaji.set(mesaj);
+    this.popItAcik.set(true);
+  }
+
+  popItKapat(): void {
+    this.popItAcik.set(false);
   }
 
   girisYap(): void {

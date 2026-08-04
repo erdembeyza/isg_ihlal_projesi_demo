@@ -1,0 +1,92 @@
+<app-extranet-shell>
+  <div class="basvuru-icerik">
+    <div class="basvuru-karti">
+      <h1 class="sayfa-baslik">Üyelik Başvurusu</h1>
+      <p class="alt-aciklama">
+        ErdemirOnline sistemine üye olmak için aşağıdaki formu eksiksiz doldurunuz.
+        Başvurunuz incelendikten sonra size bilgi verilecektir.
+      </p>
+
+      <form class="basvuru-formu" (submit)="$event.preventDefault()">
+        <div class="form-bolum-baslik">Kişisel Bilgiler</div>
+        <div class="form-grid">
+          <div class="form-alani">
+            <label for="baAd">Ad *</label>
+            <input id="baAd" type="text" placeholder="Adınız" />
+          </div>
+          <div class="form-alani">
+            <label for="baSoyad">Soyad *</label>
+            <input id="baSoyad" type="text" placeholder="Soyadınız" />
+          </div>
+          <div class="form-alani">
+            <label for="baTc">T.C. Kimlik No *</label>
+            <input id="baTc" type="text" maxlength="11" placeholder="___________" />
+          </div>
+          <div class="form-alani">
+            <label for="baDogumTarihi">Doğum Tarihi *</label>
+            <input id="baDogumTarihi" type="date" />
+          </div>
+        </div>
+
+        <div class="form-bolum-baslik">İletişim Bilgileri</div>
+        <div class="form-grid">
+          <div class="form-alani">
+            <label for="baEmail">E-posta *</label>
+            <input id="baEmail" type="email" placeholder="ornek@sirket.com" />
+          </div>
+          <div class="form-alani">
+            <label for="baTelefon">Telefon *</label>
+            <input id="baTelefon" type="tel" placeholder="+90 (___) ___ __ __" />
+          </div>
+        </div>
+
+        <div class="form-bolum-baslik">Firma Bilgileri</div>
+        <div class="form-grid">
+          <div class="form-alani tam">
+            <label for="baFirmaAdi">Firma Adı *</label>
+            <input id="baFirmaAdi" type="text" placeholder="Firma unvanınız" />
+          </div>
+          <div class="form-alani">
+            <label for="baVergiNo">Vergi No *</label>
+            <input id="baVergiNo" type="text" placeholder="Vergi numarası" />
+          </div>
+          <div class="form-alani">
+            <label for="baVergiDairesi">Vergi Dairesi *</label>
+            <input id="baVergiDairesi" type="text" placeholder="Vergi dairesi adı" />
+          </div>
+          <div class="form-alani tam">
+            <label for="baFirmaAdres">Firma Adresi *</label>
+            <textarea id="baFirmaAdres" rows="2" placeholder="Firma açık adresi"></textarea>
+          </div>
+          <div class="form-alani">
+            <label for="baSehir">Şehir *</label>
+            <input id="baSehir" type="text" placeholder="Şehir" />
+          </div>
+          <div class="form-alani">
+            <label for="baUlke">Ülke *</label>
+            <select id="baUlke">
+              <option value="">Seçiniz...</option>
+              <option value="TR" selected>Türkiye</option>
+              <option value="DE">Almanya</option>
+              <option value="US">Amerika Birleşik Devletleri</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="onay-satiri">
+          <label class="checkbox-etiket">
+            <input type="checkbox" id="baKvkk" />
+            <span>
+              <a href="javascript:void(0)">KVKK Aydınlatma Metni</a>'ni okudum ve kabul ediyorum. *
+            </span>
+          </label>
+        </div>
+
+        <div class="form-alt">
+          <p class="zorunlu-not">* ile işaretli alanlar zorunludur.</p>
+          <button type="submit" class="gonder-butonu">Başvuru Gönder</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</app-extranet-shell>
