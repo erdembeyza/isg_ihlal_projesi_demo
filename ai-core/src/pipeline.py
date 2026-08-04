@@ -3,7 +3,7 @@ MODUL-1 (tasarim_mimari.md): AI Core ana orkestrasyon dongusu.
 
 Guvenlik kamerasi (RTSP) veya yerel video okur, her N karede bir YOLO
 cikarimi calistirir, ihlal tespit edildiginde (cooldown'a takilmadiysa)
-kanit karesini yuz-blurlu kopyasiyla birlikte backend'e bildirir.
+kanit karesini backend'e bildirir.
 
 Canli akista kopma olursa otomatik yeniden baglanir; surekli calisir.
 """
@@ -19,7 +19,6 @@ import numpy as np
 
 from .backend_client import BackendIstemcisi
 from .config import Ayarlar
-from .face_blur import kanit_yuzlerini_blurla
 from .ppe_detector import Ihlal, PpeDedektoru
 from .stream import akisi_surdur, canli_akismi
 
@@ -121,8 +120,8 @@ class IhlalPipeline:
         if self._kare_no % self._ayarlar.frame_atlama != 0:
             return True
 
-        ihlaller, kisi_kutulari = self._dedektor.tespit_et(kare)
-        self._ihlalleri_isle(kare, ihlaller, kisi_kutulari)
+        ihlaller = self._dedektor.tespit_et(kare)
+        self._ihlalleri_isle(kare, ihlaller)
 
         if self._goster:
             self._kareyi_ciz_ve_goster(kare, ihlaller)
@@ -132,34 +131,17 @@ class IhlalPipeline:
                 return False
         return True
 
-    def _ihlalleri_isle(
-        self,
-        kare: np.ndarray,
-        ihlaller: list[Ihlal],
-        kisi_kutulari: list[tuple[int, int, int, int]],
-    ) -> None:
+    def _ihlalleri_isle(self, kare: np.ndarray, ihlaller: list[Ihlal]) -> None:
         simdi = time.monotonic()
-        # Ihlal olsun olmasin: tum Person kutulari + ihlal kutulari (NO-Hardhat vb.)
-        # bas/yuz blur'una girer — fotograftaki herkesin yuzu kapanir.
-        blur_kutulari = list(kisi_kutulari) + [i.kisi_kutusu for i in ihlaller]
         for ihlal in ihlaller:
             son_bildirim = self._son_bildirim_zamani.get(ihlal.ihlal_tipi_adi, 0.0)
             if simdi - son_bildirim < self._ayarlar.detection_cooldown_saniye:
                 continue
 
             self._son_bildirim_zamani[ihlal.ihlal_tipi_adi] = simdi
-            self._ihlali_bildir(kare, ihlal, blur_kutulari)
+            self._ihlali_bildir(kare, ihlal)
 
-    def _ihlali_bildir(
-        self,
-        kare: np.ndarray,
-        ihlal: Ihlal,
-        tum_kisi_kutulari: list[tuple[int, int, int, int]],
-    ) -> None:
-        # Panelde gosterilen kanit: KVKK — karedeki tum yuzler blurlu.
-        # Orijinal (sansursuz) ayri saklanir; yalnizca finetune/denetim icin.
-        orijinal = kare
-        blurlu = kanit_yuzlerini_blurla(kare, tum_kisi_kutulari)
+    def _ihlali_bildir(self, kare: np.ndarray, ihlal: Ihlal) -> None:
         tespit_zamani = datetime.now()
 
         if self._kuru_calistirma:
@@ -171,14 +153,13 @@ class IhlalPipeline:
                 ihlal.kisi_kutusu,
             )
             if self._debug_cikti_klasoru is not None:
-                self._debug_ciktisini_kaydet(orijinal, blurlu, ihlal, tespit_zamani)
+                self._debug_ciktisini_kaydet(kare, ihlal, tespit_zamani)
             return
 
         try:
             sonuc = self._backend.ihlal_bildir(  # type: ignore[union-attr]
                 ihlal.ihlal_tipi_adi,
-                orijinal,
-                blurlu,
+                kare,
                 tespit_zamani,
                 bolge_id=self._ayarlar.bolge_id,
             )
@@ -193,11 +174,10 @@ class IhlalPipeline:
         except Exception:
             logger.exception("Ihlal bildirimi basarisiz oldu, bu tespit atlaniyor.")
 
-    def _debug_ciktisini_kaydet(self, orijinal, blurlu, ihlal: Ihlal, zaman: datetime) -> None:
+    def _debug_ciktisini_kaydet(self, kare, ihlal: Ihlal, zaman: datetime) -> None:
         self._debug_cikti_klasoru.mkdir(parents=True, exist_ok=True)
         damga = zaman.strftime("%Y%m%d_%H%M%S_%f")
-        cv2.imwrite(str(self._debug_cikti_klasoru / f"{damga}_{ihlal.ihlal_tipi_adi}_orijinal.jpg"), orijinal)
-        cv2.imwrite(str(self._debug_cikti_klasoru / f"{damga}_{ihlal.ihlal_tipi_adi}_blur.jpg"), blurlu)
+        cv2.imwrite(str(self._debug_cikti_klasoru / f"{damga}_{ihlal.ihlal_tipi_adi}.jpg"), kare)
 
     def _kareyi_ciz_ve_goster(self, kare: np.ndarray, ihlaller: list[Ihlal]) -> None:
         gosterilecek = kare.copy()
@@ -214,9 +194,7 @@ class IhlalPipeline:
             gosterilecek, self._gosterim_max_genislik, self._gosterim_max_yukseklik
         )
 
-        pencere = GOSTERIM_PENCERE_ADI
-        if self._ayarlar.kamera_adi:
-            pencere = f"{GOSTERIM_PENCERE_ADI} — {self._ayarlar.kamera_adi}"
+        pencere = self._gosterim_pencere_adi()
 
         if not self._gosterim_penceresi_hazir:
             cv2.namedWindow(pencere, cv2.WINDOW_NORMAL)
@@ -225,3 +203,11 @@ class IhlalPipeline:
             self._gosterim_penceresi_hazir = True
 
         cv2.imshow(pencere, gosterilecek)
+
+    def _gosterim_pencere_adi(self) -> str:
+        """OpenCV Windows'ta Unicode pencere adlarini bozup ikinci bos pencere acabiliyor."""
+        ad = GOSTERIM_PENCERE_ADI
+        if self._ayarlar.kamera_adi:
+            ad = f"{GOSTERIM_PENCERE_ADI} - {self._ayarlar.kamera_adi}"
+        # ASCII'ye indir: em-dash / Turkce karakter kaynakli cift pencereyi onler.
+        return ad.encode("ascii", "replace").decode("ascii")

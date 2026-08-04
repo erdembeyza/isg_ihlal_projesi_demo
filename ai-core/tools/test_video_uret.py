@@ -5,7 +5,7 @@ Kaggle'daki gercek ISG ihlali videolarina internet erisimi olmayan bir
 gelistirme ortaminda (bkz. ai-core/README.md), ultralytics paketiyle birlikte
 gelen ornek gorsellerden (icinde gercek insanlar bulunan 'bus.jpg') kisa bir
 test videosu uretilerek DEMO_MODU'ndaki uctan uca boru hatti (kisi tespiti ->
-blur -> backend POST) dogrulanabilir.
+backend POST) dogrulanabilir.
 
 Kullanim:
     python tools/test_video_uret.py [--cikti test_videos/demo.mp4] [--kare-sayisi 30]

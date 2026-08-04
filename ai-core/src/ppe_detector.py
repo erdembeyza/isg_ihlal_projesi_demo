@@ -13,7 +13,7 @@ NO-Safety Vest kaliplarini esas alir.
 PPE modeli henuz mevcut degilse (dosya bulunamazsa), ultralytics'in COCO
 uzerinde on-egitilmis genel amacli `yolov8n.pt` modeline duser ve yalnizca
 "person" sinifini tespit ederek DEMO_MODU'nda calisir: bu modda tespit
-edilen her insan, boru hattinin (blur + backend POST) uctan uca
+edilen her insan, boru hattinin (yakalama + backend POST) uctan uca
 dogrulanabilmesi icin BUTUN ihlal tipleriyle isaretlenir. Bu GERCEK BIR
 URETIM TESPITI DEGILDIR; yalnizca gelistirme/kalibrasyon icindir ve
 baslangicta acikca loglanir (bkz. README.md "PPE modeli" bolumu).
@@ -68,7 +68,7 @@ class PpeDedektoru:
                 "PPE modeli bulunamadi (%s). Genel amacli 'yolov8n.pt' (COCO) "
                 "modeline dusuluyor ve DEMO_MODU aktif ediliyor: bu modda "
                 "sadece 'person' sinifi tespit edilir ve GERCEK BIR IHLAL "
-                "TESPITI YAPILMAZ; boru hatti (yakalama->blur->backend POST) "
+                "TESPITI YAPILMAZ; boru hatti (yakalama->backend POST) "
                 "test/kalibrasyon amaciyla simule edilir. Uretimde "
                 "models/ppe_yolov8n.pt yerine gercek bir PPE modeli koyunuz "
                 "(bkz. ai-core/README.md).",
@@ -89,19 +89,17 @@ class PpeDedektoru:
     def demo_modu_mu(self) -> bool:
         return self._demo_modu
 
-    def tespit_et(
-        self, kare: np.ndarray
-    ) -> tuple[list[Ihlal], list[tuple[int, int, int, int]]]:
-        """Ihlal listesi + karedeki tum kisi kutulari (KVKK blur icin)."""
+    def tespit_et(self, kare: np.ndarray) -> list[Ihlal]:
+        """Karedeki KDD ihlallerini dondurur."""
         sonuclar = self._model.predict(
             kare, conf=self._ayarlar.guven_esigi, verbose=False
         )
         if not sonuclar:
-            return [], []
+            return []
 
         kutular = sonuclar[0].boxes
         if kutular is None or len(kutular) == 0:
-            return [], []
+            return []
 
         etiketli_kutular = []
         for kutu in kutular:
@@ -111,16 +109,9 @@ class PpeDedektoru:
             x1, y1, x2, y2 = (int(v) for v in kutu.xyxy[0])
             etiketli_kutular.append((sinif_adi, guven, (x1, y1, x2, y2)))
 
-        # Person + PPE-eksik kutulari (NO-Hardhat vb.) — hepsi bas blur adayi
-        kisi_kutulari = [
-            kb[2]
-            for kb in etiketli_kutular
-            if kb[0] in KISI_SINIF_ISIMLERI or kb[0] in SINIF_TO_IHLAL_TIPI
-        ]
-
         if self._demo_modu:
-            return self._demo_ihlalleri_uret(etiketli_kutular), kisi_kutulari
-        return self._gercek_ihlalleri_uret(etiketli_kutular), kisi_kutulari
+            return self._demo_ihlalleri_uret(etiketli_kutular)
+        return self._gercek_ihlalleri_uret(etiketli_kutular)
 
     def _gercek_ihlalleri_uret(self, etiketli_kutular) -> list[Ihlal]:
         kisiler = [kb for kb in etiketli_kutular if kb[0] in KISI_SINIF_ISIMLERI]
@@ -147,8 +138,7 @@ class PpeDedektoru:
 
 def _en_yakin_kisi_kutusu(hedef_kutu, kisi_kutulari):
     """Bir KDD-eksik kutusunu (ör. NO-Hardhat), merkez mesafesine gore en
-    yakin kisi kutusuyla iliskilendirir (yuz blur alaninin dogru kisiye
-    uygulanmasi icin)."""
+    yakin kisi kutusuyla iliskilendirir."""
     if not kisi_kutulari:
         return None
 

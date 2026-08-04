@@ -43,8 +43,7 @@ class BackendIstemcisi:
     def ihlal_bildir(
         self,
         ihlal_tipi_adi: str,
-        orijinal_kare: np.ndarray,
-        blurlu_kare: np.ndarray,
+        kare: np.ndarray,
         tespit_zamani: datetime | None = None,
         bolge_id: int | None = None,
     ) -> dict:
@@ -56,8 +55,7 @@ class BackendIstemcisi:
             "bolgeId": self._ayarlar.bolge_id if bolge_id is None else bolge_id,
             "ihlalTipiId": self._ayarlar.ihlal_tipi_id(ihlal_tipi_adi),
             "tespitZamani": (tespit_zamani or datetime.now()).isoformat(timespec="seconds"),
-            "orijinalFotoBase64": kareyi_base64_jpeg_yap(orijinal_kare),
-            "blurluFotoBase64": kareyi_base64_jpeg_yap(blurlu_kare),
+            "orijinalFotoBase64": kareyi_base64_jpeg_yap(kare),
         }
 
         for deneme in (1, 2):
@@ -72,6 +70,12 @@ class BackendIstemcisi:
                     logger.warning("Token gecersiz/suresi dolmus, yeniden giris yapilip tekrar denenecek")
                     self._oturum.token_al(zorla_yenile=True)
                     continue
+                if not yanit.ok:
+                    logger.error(
+                        "Ihlal bildirimi HTTP %s: %s",
+                        yanit.status_code,
+                        yanit.text[:500],
+                    )
                 yanit.raise_for_status()
                 return yanit.json()
             except requests.RequestException as exc:
