@@ -1,9 +1,12 @@
-# AI Core — İSG Kural İhlal Tespit Servisi (Faz 7)
+# AI Core — Canlı güvenlik kamerası İSG tespit servisi
 
-MODÜL-1 (`tasarim_mimari.md`): kamera görüntüsünü YOLOv8 Nano ile analiz
-eden, KDD (baret/yelek/gözlük) ihlallerini tespit edip kanıt fotoğraflarını
-(orijinal + yüzü blurlanmış) `POST /api/ihlaller` ile Java backend'ine
-bildiren Python servisi.
+MODÜL-1: kamera görüntüsünü (RTSP) YOLOv8 ile sürekli analiz eder; baret/yelek
+ihlalini tespit edince kanıt **fotoğrafını** (orijinal + yüzü blurlu) backend’e
+`POST /api/ihlaller` ile gönderir. Web paneli bu fotoğrafları anlık listeler.
+
+**Üretim modu:** Kamerayı bir kez `.env` (veya `cameras.json`) içine yazarsın;
+AI Core açık kaldığı sürece **sürekli izler**. Videoyu tek tek elle yüklemen
+gerekmez.
 
 ## Kurulum
 
@@ -15,85 +18,87 @@ pip install -r requirements.txt
 copy .env.example .env
 ```
 
-`.env` dosyasındaki alanları kendi ortamınıza göre düzenleyin (özellikle
-`BACKEND_BASE_URL`, `VIDEO_SOURCE`, `BOLGE_ID`). Varsayılan
-`AI_CORE_KULLANICI_ADI`/`AI_CORE_SIFRE` değerleri, backend'deki
-`V4__ai_core_servis_hesabi.sql` migration'ı ile eklenen **dev/test amaçlı**
-servis hesabıyla eşleşir.
+`.env` içinde özellikle şunları düzenle:
 
-## Çalıştırma
+| Alan | Anlamı |
+|---|---|
+| `VIDEO_SOURCE` | Kamera RTSP adresi (`rtsp://user:pass@IP:554/...`) |
+| `BOLGE_ID` | Bu kameranın `bolgeler.id` değeri |
+| `BACKEND_BASE_URL` | Spring Boot adresi |
+
+## Canlı kamera
+
+### Bilgisayar webkami (şimdilik önerilen)
+
+Gerçek güvenlik kameran yoksa laptop/PC kamerası güvenlik kamerası gibi
+sürekli izlenir:
+
+1. Backend + Postgres ayakta olsun.
+2. `.env` içinde: `VIDEO_SOURCE=0` (veya `webcam`)
+3. Başlat:
 
 ```powershell
-# .env'deki VIDEO_SOURCE (RTSP akışı ya da dosya) ile canlı mod
-python -m src.main
-
-# Yerel bir video ile, backend'e HİÇBİR ŞEY GÖNDERMEDEN kalibrasyon
-python -m src.main --source test_videos/demo.mp4 --dry-run --show
-
-# Test videosunu sonsuz döngüde oynatarak canlı akışı simüle et
-python -m src.main --source test_videos/demo.mp4 --loop
+cd ai-core
+.\venv\Scripts\Activate.ps1
+python -m src.main --show
 ```
 
-CLI bayrakları: `--source`, `--dry-run` (backend'e göndermez, yalnızca
-loglar), `--debug-output <klasör>` (kuru çalıştırmada kareleri diske
-kaydeder), `--show` (tespit kutularını pencerede gösterir), `--loop`
-(video dosyasını başa sararak tekrar oynatır), `--verbose`.
+Windows’ta ilk seferde kamera izni isteyebilir — İzin Ver.
+
+### Gerçek RTSP güvenlik kamerası
+
+`.env` → `VIDEO_SOURCE=rtsp://kullanici:sifre@IP:554/...` sonra `python -m src.main`
+
+- Akış koparsa otomatik yeniden bağlanır.
+- İhlal olunca panelde **fotoğraf** görünür.
+- Durdurmak: `Ctrl+C` veya pencerede `q`.
+
+### Çoklu kamera
+
+`cameras.example.json` dosyasını kopyalayıp RTSP adreslerini doldur:
+
+```powershell
+copy cameras.example.json cameras.json
+python -m src.main --cameras cameras.json
+```
+
+Her kayıt kendi `bolge_id` ile ayrı thread’de izlenir.
+
+## Kamera yokken geliştirme (simulasyon)
+
+Yerel videoyu **döngüde** oynatmak = canlı kamera gibi davranır:
+
+```powershell
+python -m src.main --source test_videos/demo2.mp4 --loop --show
+```
+
+`--loop` olmadan dosya bitince süreç durur. RTSP’de `--loop` gerekmez.
+
+Kuru kalibrasyon (backend’e göndermez):
+
+```powershell
+python -m src.main --source test_videos/demo2.mp4 --loop --dry-run --show
+```
 
 ## PPE modeli
 
-`.env` içindeki `YOLO_MODEL_PATH` (varsayılan `models/ppe_yolov8n.pt`)
-Construction Site Safety (Roboflow) ile fine-tune edilmiş YOLOv8n ağırlığını
-bekler. Bu dosya `.gitignore`'dadır; Colab'da üretilen `best.pt` buraya
-kopyalanır.
+`models/ppe_yolov8n.pt` yoksa DEMO_MODU’na düşer (gerçek üretim tespiti değil).
+GOZLUK sınıfı mevcut eğitimde yoktur (BARET / YELEK çalışır).
 
-Beklenen ihlal sınıfları (`src/ppe_detector.py` → `SINIF_TO_IHLAL_TIPI`):
-
-| Model sınıfı | Sistem ihlal tipi |
-|---|---|
-| `NO-Hardhat` / `NO-Helmet` | BARET |
-| `NO-Safety Vest` / `NO-Vest` | YELEK |
-| `NO-Goggles` / `NO-Glasses` | GOZLUK |
-
-Mevcut Construction Site Safety eğitiminde **`NO-Goggles` yoktur**; GOZLUK
-tespiti için gözlük etiketli bir setle ek fine-tune gerekir. Kişi sınıfı
-hem `person` (COCO) hem `Person` (Roboflow) olarak tanınır.
-
-Dosya yoksa sistem COCO `yolov8n.pt`'e düşüp **DEMO_MODU**'na geçer (yalnızca
-geliştirme: her kişi tüm ihlal tipleriyle işaretlenir — gerçek tespit değil).
-
-## Test videosu üretme (Kaggle olmadan hızlı kalibrasyon)
-
-Gerçek Kaggle İSG ihlali videolarına erişim/hesap gerektirmeden, DEMO_MODU
-boru hattını hızlıca doğrulamak için `ultralytics` paketiyle birlikte gelen
-(içinde gerçek insanlar bulunan) örnek görselden küçük bir test videosu
-üretilebilir:
-
-```powershell
-python tools/test_video_uret.py --cikti test_videos/demo.mp4 --kare-sayisi 30
-python -m src.main --source test_videos/demo.mp4 --dry-run --debug-output debug_output
-```
-
-Gerçek kullanımda bu, Kaggle'daki açık kaynak İSG ihlali videolarıyla
-(`test_videos/` altına indirilip) değiştirilmelidir — bkz.
-`tasarim_mimari.md` "Test ve entegrasyon" notu.
-
-## Mimari (src/)
+## Mimari
 
 | Dosya | Sorumluluk |
 |---|---|
-| `config.py` | `.env` okuma, tip dönüşümü, yol çözümleme |
-| `auth_client.py` | Backend'e `/api/auth/login` ile giriş, JWT önbellekleme/yenileme |
-| `backend_client.py` | Kareyi base64 JPEG'e çevirme, `IhlalKayitRequestDTO` ile `POST /api/ihlaller`, 401'de otomatik yeniden giriş |
-| `face_blur.py` | Haar Cascade ile yüz tespiti + `cv2.GaussianBlur`; yüz bulunamazsa güvenlik ağı olarak kişi kutusunun üst çeyreği blurlanır |
-| `ppe_detector.py` | YOLOv8 modelini yükler, sınıf → ihlal tipi eşlemesi yapar, PPE modeli yoksa DEMO_MODU'na düşer |
-| `pipeline.py` | Video okuma döngüsü, frame atlama, cooldown (spam engelleme), kanıt üretimi ve backend'e bildirim |
-| `main.py` | CLI giriş noktası (`--source`, `--dry-run`, `--show`, `--loop`, `--debug-output`) |
+| `config.py` | `.env` + `cameras.json` |
+| `stream.py` | RTSP açma, TCP, buffer, yeniden bağlanma |
+| `pipeline.py` | Tespit döngüsü, cooldown, bildirim |
+| `main.py` | CLI / çoklu kamera thread’leri |
+| `ppe_detector.py` | YOLOv8 |
+| `face_blur.py` | KVKK yüz bulanıklaştırma |
+| `backend_client.py` | JWT + POST ihlal |
 
 ## Bilinen sınırlamalar
 
-- Kişi ↔ KDD-eksik kutusu eşleştirmesi merkez mesafesine göre yapılır
-  (basit ama kalabalık sahnelerde hatalı eşleşme riski taşır); çoklu nesne
-  takibi (ör. ByteTrack) kapsam dışı bırakılmıştır.
-- Cooldown (varsayılan 30 sn) ihlal tipi bazlıdır, kişi bazlı değildir;
-  aynı anda birden fazla farklı kişi aynı ihlal tipini tetiklerse ilk
-  bildirimden sonraki cooldown süresince diğerleri raporlanmaz.
+- Kişi ↔ KDD eşlemesi merkez mesafesine göre.
+- Cooldown ihlal tipi bazlıdır (kişi bazlı değil).
+- Web sitesinde video oynatma yoktur; yalnızca ihlal anı fotoğrafı vardır.

@@ -46,10 +46,14 @@ class BackendIstemcisi:
         orijinal_kare: np.ndarray,
         blurlu_kare: np.ndarray,
         tespit_zamani: datetime | None = None,
+        bolge_id: int | None = None,
     ) -> dict:
-        """Bir ihlali backend'e POST eder; olusturulan IhlalResponseDTO'yu (dict) doner."""
+        """Bir ihlali backend'e POST eder; olusturulan IhlalResponseDTO'yu (dict) doner.
+
+        bolge_id: coklu kamera modunda thread bazli bolge; verilmezse .env BOLGE_ID.
+        """
         istek_govdesi = {
-            "bolgeId": self._ayarlar.bolge_id,
+            "bolgeId": self._ayarlar.bolge_id if bolge_id is None else bolge_id,
             "ihlalTipiId": self._ayarlar.ihlal_tipi_id(ihlal_tipi_adi),
             "tespitZamani": (tespit_zamani or datetime.now()).isoformat(timespec="seconds"),
             "orijinalFotoBase64": kareyi_base64_jpeg_yap(orijinal_kare),

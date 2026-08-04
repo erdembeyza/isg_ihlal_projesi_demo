@@ -89,16 +89,19 @@ class PpeDedektoru:
     def demo_modu_mu(self) -> bool:
         return self._demo_modu
 
-    def tespit_et(self, kare: np.ndarray) -> list[Ihlal]:
+    def tespit_et(
+        self, kare: np.ndarray
+    ) -> tuple[list[Ihlal], list[tuple[int, int, int, int]]]:
+        """Ihlal listesi + karedeki tum kisi kutulari (KVKK blur icin)."""
         sonuclar = self._model.predict(
             kare, conf=self._ayarlar.guven_esigi, verbose=False
         )
         if not sonuclar:
-            return []
+            return [], []
 
         kutular = sonuclar[0].boxes
         if kutular is None or len(kutular) == 0:
-            return []
+            return [], []
 
         etiketli_kutular = []
         for kutu in kutular:
@@ -108,9 +111,16 @@ class PpeDedektoru:
             x1, y1, x2, y2 = (int(v) for v in kutu.xyxy[0])
             etiketli_kutular.append((sinif_adi, guven, (x1, y1, x2, y2)))
 
+        # Person + PPE-eksik kutulari (NO-Hardhat vb.) — hepsi bas blur adayi
+        kisi_kutulari = [
+            kb[2]
+            for kb in etiketli_kutular
+            if kb[0] in KISI_SINIF_ISIMLERI or kb[0] in SINIF_TO_IHLAL_TIPI
+        ]
+
         if self._demo_modu:
-            return self._demo_ihlalleri_uret(etiketli_kutular)
-        return self._gercek_ihlalleri_uret(etiketli_kutular)
+            return self._demo_ihlalleri_uret(etiketli_kutular), kisi_kutulari
+        return self._gercek_ihlalleri_uret(etiketli_kutular), kisi_kutulari
 
     def _gercek_ihlalleri_uret(self, etiketli_kutular) -> list[Ihlal]:
         kisiler = [kb for kb in etiketli_kutular if kb[0] in KISI_SINIF_ISIMLERI]

@@ -1,12 +1,12 @@
 """
-MODUL-1 (tasarim_mimari.md): KVKK geregi ihlal kanit fotograflarinin blurlu
-(yuzu sansurlenmis) kopyasini ureten yardimci modul.
+MODUL-1: KVKK — kanit karesindeki TUM kisilerin yuz/bas bolgesini sansurler.
 
-Yuz tespiti icin ek bir model indirmeye gerek kalmamasi adina opencv-python
-paketiyle birlikte gelen Haar Cascade siniflandiricisi kullanilir. Yuz hicbir
-acidan tespit edilemezse (ör. profil/arka donuk pozlar), KVKK riskini sifira
-indirmek icin kisi kutusunun ust ceyregi (bas bolgesinin oldugu alan)
-guvenlik agi olarak yine de blurlanir.
+Strateji (katmanli, kacirma riskini dusurur):
+1) Verilen her kisi / ihlal kutusunun ust yarisi (bas) zorunlu blur
+2) Tum karede frontal+profil Haar yuz tespiti → bulunan her yuz blur
+3) Kutu icinde ek yuz tarama
+
+BARET ve YELEK ayri kayit olsa bile ayni karedeki diger kisiler de blurlanir.
 """
 from __future__ import annotations
 
@@ -14,63 +14,158 @@ import cv2
 import numpy as np
 
 _yuz_dedektoru: cv2.CascadeClassifier | None = None
+_profil_dedektoru: cv2.CascadeClassifier | None = None
 
 
-def _dedektoru_al() -> cv2.CascadeClassifier:
+def _frontal_dedektor() -> cv2.CascadeClassifier:
     global _yuz_dedektoru
     if _yuz_dedektoru is None:
-        cascade_yolu = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-        _yuz_dedektoru = cv2.CascadeClassifier(cascade_yolu)
+        yol = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+        _yuz_dedektoru = cv2.CascadeClassifier(yol)
     return _yuz_dedektoru
 
 
+def _profil_dedektor() -> cv2.CascadeClassifier:
+    global _profil_dedektoru
+    if _profil_dedektoru is None:
+        yol = cv2.data.haarcascades + "haarcascade_profileface.xml"
+        _profil_dedektoru = cv2.CascadeClassifier(yol)
+    return _profil_dedektoru
+
+
 def _blur_uygula(kare: np.ndarray, x: int, y: int, w: int, h: int) -> None:
+    """Guclu gaussian + pixelate — kimlik tanima riskini azaltir."""
     x, y = max(0, x), max(0, y)
     x2, y2 = min(kare.shape[1], x + w), min(kare.shape[0], y + h)
     if x2 <= x or y2 <= y:
         return
     bolge = kare[y:y2, x:x2]
-    # Kernel boyutu bolge boyutuna gore olceklenir ve tek sayi olmasi garantilenir
-    # (GaussianBlur ciftlerde hata verir); cok kucuk bolgelerde en az 3 kullanilir.
-    k = max(3, (min(bolge.shape[:2]) // 2) | 1)
-    kare[y:y2, x:x2] = cv2.GaussianBlur(bolge, (k, k), 0)
+    bh, bw = bolge.shape[:2]
+    if bh < 2 or bw < 2:
+        return
+
+    # Once kucuk cozunurluge indirip geri buyut (pixelate)
+    kucuk_w = max(1, bw // 12)
+    kucuk_h = max(1, bh // 12)
+    kucuk = cv2.resize(bolge, (kucuk_w, kucuk_h), interpolation=cv2.INTER_LINEAR)
+    pixelate = cv2.resize(kucuk, (bw, bh), interpolation=cv2.INTER_NEAREST)
+
+    k = max(31, (min(bh, bw) // 2) | 1)
+    kare[y:y2, x:x2] = cv2.GaussianBlur(pixelate, (k, k), 0)
 
 
-def kisi_yuzunu_blurla(kare: np.ndarray, kisi_kutusu: tuple[int, int, int, int]) -> np.ndarray:
-    """
-    Verilen karenin kopyasinda, kisi_kutusu (x1, y1, x2, y2) ile sinirlanan
-    alan icindeki yuzu (bulunabilirse) veya guvenlik agi olarak kutunun ust
-    ceyregini Gaussian blur ile sansurler. Orijinal kare degistirilmez.
-    """
-    blurlu = kare.copy()
+def _bolgede_yuzleri_bul(gri: np.ndarray) -> list[tuple[int, int, int, int]]:
+    if gri.size == 0 or gri.shape[0] < 10 or gri.shape[1] < 10:
+        return []
+
+    # Kontrast iyilestirme — santiye isiginda Haar daha iyi yakalar
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    gelismis = clahe.apply(gri)
+
+    parametreler_listesi = [
+        dict(scaleFactor=1.05, minNeighbors=3, minSize=(16, 16)),
+        dict(scaleFactor=1.1, minNeighbors=2, minSize=(12, 12)),
+    ]
+
+    yuzler: list[tuple[int, int, int, int]] = []
+    genislik = gri.shape[1]
+
+    for parametreler in parametreler_listesi:
+        for kaynak in (gri, gelismis):
+            frontal = _frontal_dedektor().detectMultiScale(kaynak, **parametreler)
+            profil = _profil_dedektor().detectMultiScale(kaynak, **parametreler)
+            aynali = cv2.flip(kaynak, 1)
+            profil_aynali = _profil_dedektor().detectMultiScale(aynali, **parametreler)
+
+            for (x, y, w, h) in list(frontal) + list(profil):
+                yuzler.append((int(x), int(y), int(w), int(h)))
+            for (x, y, w, h) in profil_aynali:
+                yuzler.append((int(genislik - x - w), int(y), int(w), int(h)))
+
+    return _kutulari_birlestir(yuzler)
+
+
+def _kutulari_birlestir(
+    kutular: list[tuple[int, int, int, int]],
+) -> list[tuple[int, int, int, int]]:
+    """Cakisen yuz kutularini tekilleştir."""
+    if not kutular:
+        return []
+    kutular = sorted(kutular, key=lambda k: k[2] * k[3], reverse=True)
+    sonuc: list[tuple[int, int, int, int]] = []
+    for x, y, w, h in kutular:
+        cx, cy = x + w / 2, y + h / 2
+        tekrar = False
+        for sx, sy, sw, sh in sonuc:
+            if sx <= cx <= sx + sw and sy <= cy <= sy + sh:
+                tekrar = True
+                break
+        if not tekrar:
+            sonuc.append((x, y, w, h))
+    return sonuc
+
+
+def _yuzu_payli_blurla(kare: np.ndarray, x: int, y: int, w: int, h: int) -> None:
+    pay_x, pay_y = int(w * 0.45), int(h * 0.45)
+    _blur_uygula(kare, x - pay_x, y - pay_y, w + 2 * pay_x, h + 2 * pay_y)
+
+
+def _kisi_bas_bolgesini_blurla(
+    kare: np.ndarray, kisi_kutusu: tuple[int, int, int, int], oran: float = 0.55
+) -> None:
+    """Kisi kutusunun ust kismini (bas/yuz) zorunlu sansurle — Haar kacirsa bile."""
     x1, y1, x2, y2 = kisi_kutusu
     x1, y1 = max(0, x1), max(0, y1)
     x2, y2 = min(kare.shape[1], x2), min(kare.shape[0], y2)
     if x2 <= x1 or y2 <= y1:
-        return blurlu
+        return
+    genislik = x2 - x1
+    yukseklik = y2 - y1
+    bas_h = max(1, int(yukseklik * oran))
+    # Biraz yana genislet
+    pay = int(genislik * 0.08)
+    _blur_uygula(kare, x1 - pay, y1, genislik + 2 * pay, bas_h)
 
-    kisi_bolgesi = blurlu[y1:y2, x1:x2]
-    gri = cv2.cvtColor(kisi_bolgesi, cv2.COLOR_BGR2GRAY)
-    yuzler = _dedektoru_al().detectMultiScale(gri, scaleFactor=1.1, minNeighbors=5, minSize=(20, 20))
 
-    if len(yuzler) == 0:
-        # Guvenlik agi: kisi kutusunun ust %25'i (bas/yuz bolgesinin genelde
-        # bulundugu alan) blurlanir, boylece yuz tespiti kacirilsa bile
-        # KVKK acisindan riskli bir fotograf disari cikmaz.
-        genislik = x2 - x1
-        ust_ceyrek_yuksekligi = max(1, (y2 - y1) // 4)
-        _blur_uygula(blurlu, x1, y1, genislik, ust_ceyrek_yuksekligi)
-        return blurlu
+def kanit_yuzlerini_blurla(
+    kare: np.ndarray,
+    kisi_kutulari: list[tuple[int, int, int, int]] | None = None,
+) -> np.ndarray:
+    """
+    Kanit karesinin KVKK-uyumlu kopyasi: fotograftaki tum kisilerin yuzleri blurlu.
+    """
+    blurlu = kare.copy()
+    gri = cv2.cvtColor(blurlu, cv2.COLOR_BGR2GRAY)
 
-    for (fx, fy, fw, fh) in yuzler:
-        # Bir miktar pay birakilir ki yuzun kenarlari (sac, cene) da ortulsun.
-        pay_x, pay_y = int(fw * 0.2), int(fh * 0.2)
-        _blur_uygula(
-            blurlu,
-            x1 + fx - pay_x,
-            y1 + fy - pay_y,
-            fw + 2 * pay_x,
-            fh + 2 * pay_y,
-        )
+    benzersiz: list[tuple[int, int, int, int]] = []
+    for kutu in kisi_kutulari or []:
+        if kutu not in benzersiz:
+            benzersiz.append(kutu)
+
+    # 1) Her kisi / ihlal kutusu icin bas bolgesi ZORUNLU blur
+    for kutu in benzersiz:
+        _kisi_bas_bolgesini_blurla(blurlu, kutu, oran=0.55)
+
+    # 2) Tum karede yuz tespiti
+    for (x, y, w, h) in _bolgede_yuzleri_bul(gri):
+        _yuzu_payli_blurla(blurlu, x, y, w, h)
+
+    # 3) Her kutu icinde ek yuz tarama
+    for kutu in benzersiz:
+        x1, y1, x2, y2 = kutu
+        x1, y1 = max(0, x1), max(0, y1)
+        x2, y2 = min(blurlu.shape[1], x2), min(blurlu.shape[0], y2)
+        if x2 <= x1 or y2 <= y1:
+            continue
+        alt = gri[y1:y2, x1:x2]
+        for (fx, fy, fw, fh) in _bolgede_yuzleri_bul(alt):
+            _yuzu_payli_blurla(blurlu, x1 + fx, y1 + fy, fw, fh)
 
     return blurlu
+
+
+def kisi_yuzunu_blurla(
+    kare: np.ndarray, kisi_kutusu: tuple[int, int, int, int]
+) -> np.ndarray:
+    """Geriye donuk tek-kisi API'si."""
+    return kanit_yuzlerini_blurla(kare, [kisi_kutusu])
