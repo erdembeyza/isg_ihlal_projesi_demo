@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Veri Merkezi guvenlik kamerasi",
+    "bolge_id": 1,
+    "video_source": "0"
+  },
+  {
+    "name": "1. Sicak Haddehane kamerasi",
+    "bolge_id": 2,
+    "video_source": "http://192.168.0.21:8080/video"
+  },
+  {
+    "name": "1. Soguk Haddehane kamerasi",
+    "bolge_id": 3,
+    "video_source": "http://192.168.0.100:8080/video"
+  }
+]
