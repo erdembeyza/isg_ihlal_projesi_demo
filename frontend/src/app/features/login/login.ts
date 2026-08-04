@@ -3,15 +3,16 @@ import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { ExtranetShell } from '../../shared/layout/extranet-shell/extranet-shell';
 
 /**
- * COMPONENT-1 (tasarim_mimari.md): kullanici adi/sifre ile giris formu.
- * Basarili girişte rolune gore ilgili panele yonlendirir.
+ * COMPONENT-1 (tasarim_mimari.md): Erdemir Online görünümünde giriş formu.
+ * Ana sayfa ile aynı ekranı sunar; başarılı girişte rolüne göre panele yönlendirir.
  */
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, ExtranetShell],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
@@ -22,11 +23,16 @@ export class Login {
 
   readonly gonderiliyor = signal(false);
   readonly hataMesaji = signal<string | null>(null);
+  readonly sifreGorunur = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     kullaniciAdi: ['', [Validators.required]],
     sifre: ['', [Validators.required]],
   });
+
+  sifreGorunurunuDegistir(): void {
+    this.sifreGorunur.update((v) => !v);
+  }
 
   girisYap(): void {
     if (this.form.invalid) {
@@ -53,8 +59,8 @@ export class Login {
         this.gonderiliyor.set(false);
         this.hataMesaji.set(
           hata.status === 401
-            ? 'Kullanici adi veya sifre hatali.'
-            : 'Giris yapilamadi, lutfen daha sonra tekrar deneyin.'
+            ? 'Kullanıcı adı veya parola hatalı.'
+            : 'Giriş yapılamadı, lütfen daha sonra tekrar deneyin.'
         );
       },
     });

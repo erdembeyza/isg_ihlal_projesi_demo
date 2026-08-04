@@ -13,7 +13,7 @@ export const adminGuard: CanActivateFn = () => {
   const router = inject(Router);
 
   if (!authService.isLoggedIn()) {
-    return router.createUrlTree(['/giris']);
+    return router.createUrlTree(['/']);
   }
 
   if (authService.isYonetici()) {

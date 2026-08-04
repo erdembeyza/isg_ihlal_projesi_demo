@@ -14,6 +14,7 @@ import { Rol } from '../../core/models/auth.model';
 import { IhlalListesiComponent } from '../../shared/components/ihlal-listesi/ihlal-listesi';
 import { IstatistikGrafikComponent } from '../../shared/components/istatistik-grafik/istatistik-grafik';
 import { IhlalDetayModalComponent } from '../../shared/components/ihlal-detay-modal/ihlal-detay-modal';
+import { PanelShell } from '../../shared/layout/panel-shell/panel-shell';
 
 const TUMU = 'TÜMÜ';
 /** AI Core kameradan gelen yeni ihlalleri panelde gostermek icin yenileme araligi */
@@ -29,7 +30,13 @@ const CANLI_YENILEME_MS = 5000;
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
-  imports: [IhlalListesiComponent, IstatistikGrafikComponent, IhlalDetayModalComponent, ReactiveFormsModule],
+  imports: [
+    IhlalListesiComponent,
+    IstatistikGrafikComponent,
+    IhlalDetayModalComponent,
+    ReactiveFormsModule,
+    PanelShell,
+  ],
   templateUrl: './admin-dashboard.html',
   styleUrl: './admin-dashboard.scss',
 })
@@ -212,6 +219,6 @@ export class AdminDashboard {
 
   cikisYap(): void {
     this.authService.logout();
-    this.router.navigate(['/giris']);
+    this.router.navigate(['/']);
   }
 }

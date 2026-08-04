@@ -23,7 +23,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((hata: HttpErrorResponse) => {
       if (hata.status === 401) {
         authService.logout();
-        router.navigate(['/giris']);
+        router.navigate(['/']);
       }
       return throwError(() => hata);
     })
