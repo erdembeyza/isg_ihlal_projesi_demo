@@ -40,6 +40,8 @@ jwt:
 # backend/uploads altinda olusur, .gitignore'a eklenmistir.
 app:
   upload-dir: ${UPLOAD_DIR:uploads}
+  # Virgulle ayirilmis CORS origin listesi (ng serve / production frontend).
+  cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
 logging:
   level:

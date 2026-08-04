@@ -1,5 +1,6 @@
 package com.isg.ihlal.backend.service;
 
+import com.isg.ihlal.backend.dto.FinetuneHavuzSenkronDTO;
 import com.isg.ihlal.backend.dto.IhlalIstatistikDTO;
 import com.isg.ihlal.backend.dto.IhlalKayitRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalRedRequestDTO;
@@ -139,7 +140,45 @@ public class IhlalService {
         log.setDetay(dto != null ? dto.redNedeni() : null);
         islemLogRepository.save(log);
 
+        // MODUL-6: reddedilen orijinal kanit fine-tune havuzuna isaretlenir/kopyalanir.
+        fileStorageService.finetuneHavuzunaKopyala(
+                guncellenen.getOrijinalFotoYolu(),
+                guncellenen.getId(),
+                guncellenen.getIhlalTipi().getTipAdi()
+        );
+
         return toDto(guncellenen, user);
+    }
+
+    /**
+     * Mevcut HATALI_TESPIT kayitlarinin orijinal fotolarini fine-tune havuzuna
+     * geriye donuk kopyalar (idempotent).
+     */
+    @Transactional(readOnly = true)
+    public FinetuneHavuzSenkronDTO finetuneHavuzunuSenkronizeEt() {
+        List<Ihlal> reddedilenler = ihlalRepository.findByDurum(IhlalDurumu.HATALI_TESPIT);
+        int kopyalanan = 0;
+        int atlanan = 0;
+        int hata = 0;
+
+        for (Ihlal ihlal : reddedilenler) {
+            try {
+                boolean ok = fileStorageService.finetuneHavuzunaKopyala(
+                        ihlal.getOrijinalFotoYolu(),
+                        ihlal.getId(),
+                        ihlal.getIhlalTipi().getTipAdi()
+                );
+                if (ok) {
+                    kopyalanan++;
+                } else {
+                    atlanan++;
+                }
+            } catch (RuntimeException ex) {
+                hata++;
+            }
+        }
+
+        return new FinetuneHavuzSenkronDTO(reddedilenler.size(), kopyalanan, atlanan, hata);
     }
 
     public List<IhlalIstatistikDTO> istatistik(AuthenticatedUser user) {
@@ -191,8 +230,10 @@ public class IhlalService {
     }
 
     private IhlalResponseDTO toDto(Ihlal ihlal, AuthenticatedUser user) {
-        boolean yonetici = !isFormen(user);
-        String fotoUrl = yonetici ? ihlal.getOrijinalFotoYolu() : ihlal.getBlurluFotoYolu();
+        // KVKK: panelde her zaman yuzu blurlu kanit gosterilir.
+        // (Orijinal dosya diskte kalir; finetune havuzu / denetim icin.)
+        // BARET/YELEK ayri kayit olsa bile baska bir kisinin yuzu acik kalmaz.
+        String fotoUrl = ihlal.getBlurluFotoYolu();
 
         return new IhlalResponseDTO(
                 ihlal.getId(),

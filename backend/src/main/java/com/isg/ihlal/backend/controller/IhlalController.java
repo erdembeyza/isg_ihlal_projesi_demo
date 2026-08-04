@@ -1,5 +1,6 @@
 package com.isg.ihlal.backend.controller;
 
+import com.isg.ihlal.backend.dto.FinetuneHavuzSenkronDTO;
 import com.isg.ihlal.backend.dto.IhlalIstatistikDTO;
 import com.isg.ihlal.backend.dto.IhlalKayitRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalRedRequestDTO;
@@ -37,25 +38,38 @@ public class IhlalController {
 
     /**
      * AI Core servisinin yeni tespit ettigi ihlali islemek icin kullandigi uc.
-     * Ozel bir rol kisiti yoktur; gecerli bir JWT ile herhangi bir kimlik
-     * dogrulanmis istemci (ör. AI Core icin ayrilacak servis hesabi) cagirabilir.
+     * Yalnizca AI_CORE_SERVIS rolu (V5) ile cagrilabilir.
      */
     @PostMapping
+    @PreAuthorize("hasRole('AI_CORE_SERVIS')")
     public ResponseEntity<IhlalResponseDTO> kaydet(@Valid @RequestBody IhlalKayitRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(ihlalService.kaydet(dto));
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
     public List<IhlalResponseDTO> listele(@AuthenticationPrincipal AuthenticatedUser user) {
         return ihlalService.listele(user);
     }
 
     @GetMapping("/istatistik")
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
     public List<IhlalIstatistikDTO> istatistik(@AuthenticationPrincipal AuthenticatedUser user) {
         return ihlalService.istatistik(user);
     }
 
+    /**
+     * MODUL-6: mevcut HATALI_TESPIT orijinal fotolarini fine-tune havuzuna senkronize eder.
+     * Path'te literal segment, /{id} ile catismasin diye id mapping'inden once tanimlanir.
+     */
+    @PostMapping("/finetune-havuz/senkronize")
+    @PreAuthorize("hasRole('ISG_YONETICI')")
+    public FinetuneHavuzSenkronDTO finetuneHavuzunuSenkronizeEt() {
+        return ihlalService.finetuneHavuzunuSenkronizeEt();
+    }
+
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
     public IhlalResponseDTO detay(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
         return ihlalService.detay(id, user);
     }

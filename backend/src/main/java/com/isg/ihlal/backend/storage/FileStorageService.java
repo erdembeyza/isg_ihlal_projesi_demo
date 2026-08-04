@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.UUID;
 
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -26,17 +28,23 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 public class FileStorageService {
 
     private static final String ALT_KLASOR = "ihlaller";
+    private static final String FINETUNE_HAVUZ = "finetune-havuz";
 
+    private final Path uploadKok;
     private final Path kokDizin;
+    private final Path finetuneHavuz;
 
     public FileStorageService(@Value("${app.upload-dir}") String uploadDir) {
-        this.kokDizin = Paths.get(uploadDir, ALT_KLASOR).toAbsolutePath().normalize();
+        this.uploadKok = Paths.get(uploadDir).toAbsolutePath().normalize();
+        this.kokDizin = uploadKok.resolve(ALT_KLASOR).normalize();
+        this.finetuneHavuz = uploadKok.resolve(FINETUNE_HAVUZ).normalize();
     }
 
     @PostConstruct
     public void klasoruHazirla() {
         try {
             Files.createDirectories(kokDizin);
+            Files.createDirectories(finetuneHavuz);
         } catch (IOException e) {
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Yukleme klasoru olusturulamadi", e);
         }
@@ -78,7 +86,69 @@ public class FileStorageService {
         return "/uploads/" + ALT_KLASOR + "/" + dosyaAdi;
     }
 
+    /**
+     * MODUL-6: reddedilen (HATALI_TESPIT) ihlalin orijinal kanitini
+     * fine-tune havuzuna kopyalar. Hedef zaten varsa true doner (idempotent).
+     *
+     * @return true kopyalandi veya zaten vardı; false kaynak dosya yoksa
+     */
+    public boolean finetuneHavuzunaKopyala(String orijinalFotoUrl, Long ihlalId, String ihlalTipiAdi) {
+        if (!StringUtils.hasText(orijinalFotoUrl) || ihlalId == null) {
+            return false;
+        }
+
+        Path kaynak = urlDenDosyaYolu(orijinalFotoUrl);
+        if (!Files.isRegularFile(kaynak)) {
+            return false;
+        }
+
+        String tipKlasoru = guvenliKlasorAdi(ihlalTipiAdi);
+        Path hedefKlasor = finetuneHavuz.resolve(tipKlasoru);
+        try {
+            Files.createDirectories(hedefKlasor);
+            Path hedef = hedefKlasor.resolve(ihlalId + "_orijinal.jpg");
+            if (Files.exists(hedef)) {
+                return true;
+            }
+            Files.copy(kaynak, hedef, StandardCopyOption.COPY_ATTRIBUTES);
+            return true;
+        } catch (IOException e) {
+            throw new ResponseStatusException(
+                    INTERNAL_SERVER_ERROR,
+                    "Fine-tune havuzuna kopyalanamadi: ihlalId=" + ihlalId,
+                    e
+            );
+        }
+    }
+
     public Path getKokDizin() {
         return kokDizin;
+    }
+
+    public Path getFinetuneHavuz() {
+        return finetuneHavuz;
+    }
+
+    private Path urlDenDosyaYolu(String fotoUrl) {
+        String temiz = fotoUrl.startsWith("/uploads/")
+                ? fotoUrl.substring("/uploads/".length())
+                : fotoUrl.replaceFirst("^/+", "");
+        Path yol = uploadKok.resolve(temiz).normalize();
+        if (!yol.startsWith(uploadKok)) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Gecersiz foto yolu"
+            );
+        }
+        return yol;
+    }
+
+    private static String guvenliKlasorAdi(String ihlalTipiAdi) {
+        if (!StringUtils.hasText(ihlalTipiAdi)) {
+            return "BILINMEYEN";
+        }
+        String temiz = ihlalTipiAdi.trim().toUpperCase(Locale.ROOT)
+                .replaceAll("[^A-Z0-9_-]", "_");
+        return temiz.isEmpty() ? "BILINMEYEN" : temiz;
     }
 }

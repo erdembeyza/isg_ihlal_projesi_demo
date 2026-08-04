@@ -34,6 +34,13 @@ public class KullaniciService {
     }
 
     public KullaniciResponseDTO olustur(KullaniciRequestDTO dto) {
+        if (dto.rol() == Rol.AI_CORE_SERVIS) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "AI_CORE_SERVIS rolu panel uzerinden olusturulamaz"
+            );
+        }
+
         if (kullaniciRepository.existsByKullaniciAdi(dto.kullaniciAdi())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu kullanici adi zaten kullanimda: " + dto.kullaniciAdi());
         }
