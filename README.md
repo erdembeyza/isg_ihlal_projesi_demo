@@ -25,7 +25,7 @@ web paneli üzerinden raporlayan sistem.
 docker compose up -d
 ```
 
-- Postgres: `localhost:5432` (`isg_db` / `isg_admin` — bkz. `docker-compose.yml`)
+- Postgres: `localhost:5432` (`isg_ihlal_db` / `isg_admin` — bkz. `docker-compose.yml`)
 - pgAdmin: `http://localhost:5050`
 
 ### 2) Backend
@@ -35,7 +35,8 @@ cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-API: `http://localhost:8080` — Flyway migration'ları (V1–V4) açılışta uygulanır.
+API: `http://localhost:8080` — Flyway migration'ları (V1–V5) açılışta uygulanır.
+Ortam değişkenleri: `backend/.env.example`.
 
 ### 3) Frontend
 
@@ -54,19 +55,25 @@ Panel: `http://localhost:4200`
 
 > Yalnızca geliştirme/test içindir; üretimde değiştirilmelidir.
 
-### 4) AI Core
+### 4) AI Core (canlı kamera)
+
+Üretimde AI Core **sürekli** çalışır; güvenlik kamerasının RTSP adresini
+`.env` içine bir kez yazman yeter. Videoyu tek tek yüklemen gerekmez.
 
 ```powershell
 cd ai-core
-.\venv\Scripts\Activate.ps1   # yoksa: python -m venv venv && pip install -r requirements.txt
-copy .env.example .env        # bir kez; gerekirse VIDEO_SOURCE / BOLGE_ID düzenleyin
-python -m src.main --source test_videos\demo.mp4
+.\venv\Scripts\Activate.ps1
+copy .env.example .env
+# .env icinde: VIDEO_SOURCE=rtsp://kullanici:sifre@KAMERA_IP:554/...
+python -m src.main
 ```
 
-- Servis hesabı: `ai_core_servis` / `AiCore123!` (V4 migration — yalnızca dev)
-- Gerçek PPE modeli: `ai-core/models/ppe_yolov8n.pt` (git'e alınmaz; Colab/eğitim sonrası buraya konur)
-- Offline kalibrasyon: `python -m src.main --source test_videos\demo.mp4 --dry-run --show`
-- Kaggle İSG videoları: dosyayı `ai-core/test_videos/` altına koyup `--source` ile verin (bkz. `tasarim_mimari.md` test notu)
+veya repo kökünden: `.\scripts\start-ai-core.ps1`
+
+- Servis hesabı: `ai_core_servis` / `AiCore123!` (yalnızca dev)
+- Çoklu kamera: `cameras.example.json` → `cameras.json`, sonra `python -m src.main --cameras cameras.json`
+- Kamera yokken test: `python -m src.main --source test_videos\demo2.mp4 --loop --show`
+- Panelde görünen: ihlal anı **fotoğrafı** (kaynak video siteye gitmez)
 
 ## Faz durumu
 
@@ -75,5 +82,5 @@ Faz 0–8 tamamlandı. Detaylar ilerleme günlüklerinde.
 ## Bilinen sınırlamalar (tasarıma göre / kapanış)
 
 - **GOZLUK:** Eğitilen Construction Site Safety PPE modelinde `NO-Goggles` sınıfı yok; BARET (`NO-Hardhat`) ve YELEK (`NO-Safety Vest`) tespit edilir. Gözlük için ayrı etiketli set + fine-tune gerekir.
-- **MODÜL-6 “reddedilen görseller havuzu”:** Tasarımda “ileriki fazlarda fine-tuning için işaretlenir” denmiştir; red işlemi `HATALI_TESPIT` + `islem_loglari` ile kayıt altındadır, ayrı bir export klasörü henüz yoktur.
-- Canlı RTSP yerine geliştirmede yerel/Kaggle videosu kullanılır; `.env` içinde `VIDEO_SOURCE=rtsp://...` ile canlı akışa geçilebilir.
+- **MODÜL-6 fine-tune havuzu:** Reddedilen ihlallerin orijinal fotoğrafları `backend/uploads/finetune-havuz/{tip}/` altına kopyalanır; geriye dönük senkron: `scripts/export-finetune-havuz.ps1`.
+- Canlı mod: `.env` → `VIDEO_SOURCE=rtsp://...` ve `python -m src.main` (kopunca otomatik yeniden bağlanır). Geliştirmede dosya + `--loop` ile simüle edilir.

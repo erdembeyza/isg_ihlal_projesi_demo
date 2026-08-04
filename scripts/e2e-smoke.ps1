@@ -24,11 +24,14 @@ try {
     throw
 }
 
-Write-Adim "2 AI Core servis hesabi V4 ile login"
+Write-Adim "2 AI Core servis hesabi (AI_CORE_SERVIS) ile login"
 $aiLogin = Invoke-RestMethod -Uri "$BackendBase/api/auth/login" -Method POST -ContentType "application/json" `
     -Body '{"kullaniciAdi":"ai_core_servis","sifre":"AiCore123!"}' -TimeoutSec 10
 if (-not $aiLogin.token) { throw "ai_core_servis login basarisiz" }
-Write-Host "OK ai_core_servis JWT alindi"
+if ($aiLogin.rol -ne "AI_CORE_SERVIS") {
+    throw "Beklenen rol AI_CORE_SERVIS, gelen=$($aiLogin.rol) — V5 migration uygulandi mi?"
+}
+Write-Host "OK ai_core_servis JWT alindi rol=$($aiLogin.rol)"
 
 Write-Adim "3 Onceki ihlal sayisi admin"
 $headers = @{ Authorization = "Bearer $adminToken" }
