@@ -24,16 +24,18 @@ otomatik yeniden yüklenir. Geliştirme ortamında API adresi
 ```text
 src/app/
   core/
-    models/        Backend DTO'larina karsilik gelen TS interface'leri
-    services/       AuthService, IhlalService, BolgeService, KullaniciService
-    interceptors/    jwtInterceptor - her istege Authorization header'i ekler
-    guards/          authGuard, adminGuard, foremanGuard
+    models/        Backend DTO'larına karşılık gelen TS interface'leri
+    services/      AuthService, IhlalService, BolgeService, KullaniciService
+    interceptors/  jwtInterceptor — her isteğe Authorization header'ı ekler
+    guards/        authGuard, adminGuard, foremanGuard
+    directives/    AuthImgDirective (JWT ile korumalı foto yükleme)
   features/
     login/                 COMPONENT-1
-    admin-dashboard/       COMPONENT-2 (+ alt bilesenler)
-    foreman-dashboard/     COMPONENT-3 (+ alt bilesenler)
-    shared/                IhlalListesiComponent, IstatistikGrafikComponent,
-                           IhlalDetayModalComponent (COMPONENT-4/5/6)
+    admin-dashboard/       COMPONENT-2
+    foreman-dashboard/     COMPONENT-3
+  shared/
+    components/            IhlalListesi, IstatistikGrafik, IhlalDetayModal
+                           (COMPONENT-4/5/6)
 ```
 
 ## Test giriş bilgileri (yalnızca geliştirme ortamı)
@@ -42,6 +44,8 @@ src/app/
 |---|---|---|
 | `admin` | `Admin123!` | ISG_YONETICI |
 | `formen1` | `Formen123!` | FORMEN |
+
+`ai_core_servis` hesabı panel girişi için kullanılamaz (yalnızca AI Core API).
 
 ## Build
 

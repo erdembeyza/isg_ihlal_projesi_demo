@@ -40,7 +40,14 @@ export class Login {
     this.authService.login(this.form.getRawValue()).subscribe({
       next: (yanit) => {
         this.gonderiliyor.set(false);
-        this.router.navigate([yanit.rol === 'ISG_YONETICI' ? '/yonetici' : '/formen']);
+        if (yanit.rol === 'ISG_YONETICI') {
+          this.router.navigate(['/yonetici']);
+        } else if (yanit.rol === 'FORMEN') {
+          this.router.navigate(['/formen']);
+        } else {
+          this.authService.logout();
+          this.hataMesaji.set('Bu hesap panel girişi için kullanılamaz.');
+        }
       },
       error: (hata: HttpErrorResponse) => {
         this.gonderiliyor.set(false);

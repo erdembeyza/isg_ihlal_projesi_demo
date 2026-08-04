@@ -1,5 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { interval } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { IhlalService } from '../../core/services/ihlal.service';
 import { Ihlal, IhlalIstatistik } from '../../core/models/ihlal.model';
@@ -8,6 +10,7 @@ import { IstatistikGrafikComponent } from '../../shared/components/istatistik-gr
 import { IhlalDetayModalComponent } from '../../shared/components/ihlal-detay-modal/ihlal-detay-modal';
 
 const TUMU = 'TÜMÜ';
+const CANLI_YENILEME_MS = 5000;
 
 /**
  * COMPONENT-3 (tasarim_mimari.md): Formen Dashboard'u.
@@ -36,6 +39,8 @@ export class ForemanDashboard {
   protected readonly hataMesaji = signal<string | null>(null);
 
   protected readonly secilenTip = signal<string>(TUMU);
+  protected readonly baslangicTarihi = signal<string>('');
+  protected readonly bitisTarihi = signal<string>('');
   protected readonly secilenIhlal = signal<Ihlal | null>(null);
 
   protected readonly tipSecenekleri = computed(() => {
@@ -45,7 +50,14 @@ export class ForemanDashboard {
 
   protected readonly filtreliIhlaller = computed(() => {
     const tip = this.secilenTip();
-    return this.ihlaller().filter((i) => tip === TUMU || i.ihlalTipiAdi === tip);
+    const bas = this.baslangicTarihi();
+    const bit = this.bitisTarihi();
+    return this.ihlaller().filter((i) => {
+      if (tip !== TUMU && i.ihlalTipiAdi !== tip) return false;
+      if (bas && i.tespitZamani < `${bas}T00:00:00`) return false;
+      if (bit && i.tespitZamani > `${bit}T23:59:59`) return false;
+      return true;
+    });
   });
 
   protected readonly enBelirginTrend = computed(() => {
@@ -57,11 +69,16 @@ export class ForemanDashboard {
   });
 
   constructor() {
-    this.verileriYukle();
+    this.verileriYukle(true);
+    interval(CANLI_YENILEME_MS)
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.verileriYukle(false));
   }
 
-  private verileriYukle(): void {
-    this.yukleniyor.set(true);
+  private verileriYukle(ilkYukleme = false): void {
+    if (ilkYukleme) {
+      this.yukleniyor.set(true);
+    }
     this.hataMesaji.set(null);
 
     this.ihlalService.listele().subscribe({
@@ -70,8 +87,10 @@ export class ForemanDashboard {
         this.yukleniyor.set(false);
       },
       error: () => {
-        this.hataMesaji.set('İhlal listesi yüklenemedi.');
-        this.yukleniyor.set(false);
+        if (ilkYukleme) {
+          this.hataMesaji.set('İhlal listesi yüklenemedi.');
+          this.yukleniyor.set(false);
+        }
       },
     });
 
@@ -80,6 +99,14 @@ export class ForemanDashboard {
 
   tipFiltresiDegisti(tip: string): void {
     this.secilenTip.set(tip);
+  }
+
+  baslangicTarihiDegisti(tarih: string): void {
+    this.baslangicTarihi.set(tarih);
+  }
+
+  bitisTarihiDegisti(tarih: string): void {
+    this.bitisTarihi.set(tarih);
   }
 
   grafiktenTipSecildi(tip: string): void {

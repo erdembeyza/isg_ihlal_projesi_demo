@@ -85,6 +85,22 @@
               <option [value]="tip">{{ tip === TUMU ? 'Tüm Tipler' : tip }}</option>
             }
           </select>
+          <label class="tarih-filtre">
+            <span>Başlangıç</span>
+            <input
+              type="date"
+              [value]="baslangicTarihi()"
+              (change)="baslangicTarihiDegisti($any($event.target).value)"
+            />
+          </label>
+          <label class="tarih-filtre">
+            <span>Bitiş</span>
+            <input
+              type="date"
+              [value]="bitisTarihi()"
+              (change)="bitisTarihiDegisti($any($event.target).value)"
+            />
+          </label>
         </div>
       </div>
       <app-ihlal-listesi [ihlaller]="filtreliIhlaller()" (satirSecildi)="satirSecildi($event)" />

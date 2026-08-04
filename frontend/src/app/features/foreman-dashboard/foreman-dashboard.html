@@ -33,11 +33,29 @@
     <section class="kart">
       <div class="liste-basligi">
         <h2>İhlal Kayıtları ({{ filtreliIhlaller().length }})</h2>
-        <select [value]="secilenTip()" (change)="tipFiltresiDegisti($any($event.target).value)">
-          @for (tip of tipSecenekleri(); track tip) {
-            <option [value]="tip">{{ tip === TUMU ? 'Tüm Tipler' : tip }}</option>
-          }
-        </select>
+        <div class="filtreler">
+          <select [value]="secilenTip()" (change)="tipFiltresiDegisti($any($event.target).value)">
+            @for (tip of tipSecenekleri(); track tip) {
+              <option [value]="tip">{{ tip === TUMU ? 'Tüm Tipler' : tip }}</option>
+            }
+          </select>
+          <label class="tarih-filtre">
+            <span>Başlangıç</span>
+            <input
+              type="date"
+              [value]="baslangicTarihi()"
+              (change)="baslangicTarihiDegisti($any($event.target).value)"
+            />
+          </label>
+          <label class="tarih-filtre">
+            <span>Bitiş</span>
+            <input
+              type="date"
+              [value]="bitisTarihi()"
+              (change)="bitisTarihiDegisti($any($event.target).value)"
+            />
+          </label>
+        </div>
       </div>
       <app-ihlal-listesi [ihlaller]="filtreliIhlaller()" (satirSecildi)="satirSecildi($event)" />
     </section>

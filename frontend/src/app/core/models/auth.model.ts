@@ -1,4 +1,4 @@
-export type Rol = 'ISG_YONETICI' | 'FORMEN';
+export type Rol = 'ISG_YONETICI' | 'FORMEN' | 'AI_CORE_SERVIS';
 
 /** Backend: LoginRequestDTO */
 export interface LoginRequest {
