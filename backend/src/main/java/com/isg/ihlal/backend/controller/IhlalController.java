@@ -1,10 +1,12 @@
 package com.isg.ihlal.backend.controller;
 
 import com.isg.ihlal.backend.dto.FinetuneHavuzSenkronDTO;
+import com.isg.ihlal.backend.dto.IhlalCozRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalIstatistikDTO;
 import com.isg.ihlal.backend.dto.IhlalKayitRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalRedRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalResponseDTO;
+import com.isg.ihlal.backend.dto.KaliteIstatistikDTO;
 import com.isg.ihlal.backend.dto.PersonelIstatistikDTO;
 import com.isg.ihlal.backend.security.AuthenticatedUser;
 import com.isg.ihlal.backend.service.IhlalService;
@@ -22,11 +24,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/**
- * MODUL-2 (tasarim_mimari.md): ihlal servisleri.
- * Rol bazli kapsam (formen: kendi bolgesi, yonetici: tum fabrika) IhlalService
- * icinde, gecerli JWT'den cozulen AuthenticatedUser uzerinden uygulanir.
- */
 @RestController
 @RequestMapping("/api/ihlaller")
 public class IhlalController {
@@ -37,10 +34,6 @@ public class IhlalController {
         this.ihlalService = ihlalService;
     }
 
-    /**
-     * AI Core servisinin yeni tespit ettigi ihlali islemek icin kullandigi uc.
-     * Yalnizca AI_CORE_SERVIS rolu (V5) ile cagrilabilir.
-     */
     @PostMapping
     @PreAuthorize("hasRole('AI_CORE_SERVIS')")
     public ResponseEntity<IhlalResponseDTO> kaydet(@Valid @RequestBody IhlalKayitRequestDTO dto) {
@@ -48,27 +41,29 @@ public class IhlalController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN', 'GORUNTULEYICI')")
     public List<IhlalResponseDTO> listele(@AuthenticationPrincipal AuthenticatedUser user) {
         return ihlalService.listele(user);
     }
 
     @GetMapping("/istatistik")
-    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN', 'GORUNTULEYICI')")
     public List<IhlalIstatistikDTO> istatistik(@AuthenticationPrincipal AuthenticatedUser user) {
         return ihlalService.istatistik(user);
     }
 
     @GetMapping("/istatistik/personel")
-    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN', 'GORUNTULEYICI')")
     public List<PersonelIstatistikDTO> personelIstatistik(@AuthenticationPrincipal AuthenticatedUser user) {
         return ihlalService.personelIstatistik(user);
     }
 
-    /**
-     * MODUL-6: mevcut HATALI_TESPIT orijinal fotolarini fine-tune havuzuna senkronize eder.
-     * Path'te literal segment, /{id} ile catismasin diye id mapping'inden once tanimlanir.
-     */
+    @GetMapping("/istatistik/kalite")
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'GORUNTULEYICI')")
+    public KaliteIstatistikDTO kaliteIstatistik(@AuthenticationPrincipal AuthenticatedUser user) {
+        return ihlalService.kaliteIstatistik(user);
+    }
+
     @PostMapping("/finetune-havuz/senkronize")
     @PreAuthorize("hasRole('ISG_YONETICI')")
     public FinetuneHavuzSenkronDTO finetuneHavuzunuSenkronizeEt() {
@@ -76,7 +71,7 @@ public class IhlalController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
+    @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN', 'GORUNTULEYICI')")
     public IhlalResponseDTO detay(@PathVariable Long id, @AuthenticationPrincipal AuthenticatedUser user) {
         return ihlalService.detay(id, user);
     }
@@ -95,8 +90,9 @@ public class IhlalController {
     @PreAuthorize("hasAnyRole('ISG_YONETICI', 'FORMEN')")
     public IhlalResponseDTO coz(
             @PathVariable Long id,
+            @RequestBody(required = false) @Valid IhlalCozRequestDTO dto,
             @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return ihlalService.coz(id, user);
+        return ihlalService.coz(id, dto, user);
     }
 }

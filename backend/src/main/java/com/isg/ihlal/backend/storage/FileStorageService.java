@@ -14,6 +14,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 
@@ -152,6 +153,18 @@ public class FileStorageService {
 
     public Path getFinetuneHavuz() {
         return finetuneHavuz;
+    }
+
+    /** Fine-tune havuzundaki toplam dosya sayisi (model kalite metriği). */
+    public int finetuneHavuzDosyaSayisi() {
+        if (!Files.isDirectory(finetuneHavuz)) {
+            return 0;
+        }
+        try (Stream<Path> akis = Files.walk(finetuneHavuz)) {
+            return (int) akis.filter(Files::isRegularFile).count();
+        } catch (IOException e) {
+            return 0;
+        }
     }
 
     private Path urlDenDosyaYolu(String fotoUrl) {

@@ -70,7 +70,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/**").authenticated()
                         // Spring Boot'ta response.sendError(...) cagirimi sunucu icinde /error'a
                         // forward eder; bu forward guvenlik zincirinden TEKRAR gecer ve JWT filtresi
                         // (OncePerRequestFilter oldugu icin) ikinci kez calismaz. /error permitAll

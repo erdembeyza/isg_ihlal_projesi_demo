@@ -28,6 +28,9 @@ public record IhlalKayitRequestDTO(
         Long personelId,
 
         /** Opsiyonel: personelId yoksa sicil no ile eslestirme. */
-        String personelSicilNo
+        String personelSicilNo,
+
+        /** Opsiyonel: AI Core track boyunca biriken ihlal suresi (saniye). */
+        Integer sureSaniye
 ) {
 }

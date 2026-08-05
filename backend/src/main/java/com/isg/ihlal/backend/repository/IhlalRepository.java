@@ -5,6 +5,7 @@ import com.isg.ihlal.backend.entity.IhlalDurumu;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -20,4 +21,14 @@ public interface IhlalRepository extends JpaRepository<Ihlal, Long> {
     List<Ihlal> findByBolgeIdAndDurum(Long bolgeId, IhlalDurumu durum);
 
     List<Ihlal> findByDurum(IhlalDurumu durum);
+
+    List<Ihlal> findByTespitZamaniBetween(LocalDateTime baslangic, LocalDateTime bitis);
+
+    List<Ihlal> findByBolgeIdAndTespitZamaniBetween(Long bolgeId, LocalDateTime baslangic, LocalDateTime bitis);
+
+    long countByDurum(IhlalDurumu durum);
+
+    long countByTespitZamaniBetween(LocalDateTime baslangic, LocalDateTime bitis);
+
+    long countByDurumAndTespitZamaniBetween(IhlalDurumu durum, LocalDateTime baslangic, LocalDateTime bitis);
 }

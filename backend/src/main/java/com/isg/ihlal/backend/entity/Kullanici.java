@@ -56,6 +56,18 @@ public class Kullanici {
     @Column(name = "aktif_mi", nullable = false)
     private Boolean aktifMi = Boolean.TRUE;
 
+    @Size(max = 120)
+    @Column(name = "eposta", length = 120)
+    private String eposta;
+
+    @Size(max = 30)
+    @Column(name = "telefon", length = 30)
+    private String telefon;
+
+    @Size(max = 150)
+    @Column(name = "gorev", length = 150)
+    private String gorev;
+
     public Kullanici() {
     }
 
@@ -113,5 +125,29 @@ public class Kullanici {
 
     public void setAktifMi(Boolean aktifMi) {
         this.aktifMi = aktifMi;
+    }
+
+    public String getEposta() {
+        return eposta;
+    }
+
+    public void setEposta(String eposta) {
+        this.eposta = eposta;
+    }
+
+    public String getTelefon() {
+        return telefon;
+    }
+
+    public void setTelefon(String telefon) {
+        this.telefon = telefon;
+    }
+
+    public String getGorev() {
+        return gorev;
+    }
+
+    public void setGorev(String gorev) {
+        this.gorev = gorev;
     }
 }

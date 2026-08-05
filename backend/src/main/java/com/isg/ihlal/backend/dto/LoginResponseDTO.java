@@ -7,6 +7,8 @@ package com.isg.ihlal.backend.dto;
  */
 public record LoginResponseDTO(
         String token,
+        Long kullaniciId,
+        String kullaniciAdi,
         String rol,
         String adSoyad,
         Long bolgeId

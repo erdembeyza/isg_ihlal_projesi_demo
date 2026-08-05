@@ -15,6 +15,8 @@ public record IhlalResponseDTO(
         String durum,
         Long personelId,
         String personelAdi,
-        String personelSicilNo
+        String personelSicilNo,
+        String cozNotu,
+        Integer sureSaniye
 ) {
 }

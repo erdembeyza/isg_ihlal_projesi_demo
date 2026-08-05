@@ -1,10 +1,12 @@
 package com.isg.ihlal.backend.service;
 
 import com.isg.ihlal.backend.dto.FinetuneHavuzSenkronDTO;
+import com.isg.ihlal.backend.dto.IhlalCozRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalIstatistikDTO;
 import com.isg.ihlal.backend.dto.IhlalKayitRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalRedRequestDTO;
 import com.isg.ihlal.backend.dto.IhlalResponseDTO;
+import com.isg.ihlal.backend.dto.KaliteIstatistikDTO;
 import com.isg.ihlal.backend.dto.PersonelIstatistikDTO;
 import com.isg.ihlal.backend.entity.Bolge;
 import com.isg.ihlal.backend.entity.Ihlal;
@@ -28,7 +30,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -41,16 +48,12 @@ import java.util.stream.Collectors;
 /**
  * MODUL-2 (tasarim_mimari.md): ihlal kayitlarinin olusturulmasi, rol bazli
  * listelenmesi/goruntulenmesi, reddedilmesi/cozumu ve istatistik hesaplamasi.
- *
- * Sinif genelinde @Transactional(readOnly = true): entity -> DTO donusumu
- * sirasinda bolge/ihlalTipi/personel gibi LAZY iliskilere erisildiginde Hibernate
- * session'inin acik kalmasini saglar (aksi halde LazyInitializationException
- * alinir, cunku application.yml'de open-in-view kapali).
- * Yazma yapan metotlar kendi @Transactional'lari ile override eder.
  */
 @Service
 @Transactional(readOnly = true)
 public class IhlalService {
+
+    private static final DateTimeFormatter HAFTA_ETIKET = DateTimeFormatter.ofPattern("dd.MM");
 
     private final IhlalRepository ihlalRepository;
     private final BolgeRepository bolgeRepository;
@@ -59,6 +62,7 @@ public class IhlalService {
     private final IslemLogRepository islemLogRepository;
     private final PersonelRepository personelRepository;
     private final FileStorageService fileStorageService;
+    private final TelegramBildirimService telegramBildirimService;
 
     public IhlalService(
             IhlalRepository ihlalRepository,
@@ -67,7 +71,8 @@ public class IhlalService {
             KullaniciRepository kullaniciRepository,
             IslemLogRepository islemLogRepository,
             PersonelRepository personelRepository,
-            FileStorageService fileStorageService
+            FileStorageService fileStorageService,
+            TelegramBildirimService telegramBildirimService
     ) {
         this.ihlalRepository = ihlalRepository;
         this.bolgeRepository = bolgeRepository;
@@ -76,6 +81,7 @@ public class IhlalService {
         this.islemLogRepository = islemLogRepository;
         this.personelRepository = personelRepository;
         this.fileStorageService = fileStorageService;
+        this.telegramBildirimService = telegramBildirimService;
     }
 
     @Transactional
@@ -94,8 +100,10 @@ public class IhlalService {
         ihlal.setOrijinalFotoYolu(orijinalYol);
         ihlal.setDurum(IhlalDurumu.AKTIF);
         ihlal.setPersonel(personelCozumle(dto.personelId(), dto.personelSicilNo()));
+        ihlal.setSureSaniye(dto.sureSaniye());
 
         Ihlal kaydedilen = ihlalRepository.save(ihlal);
+        telegramBildirimService.yeniIhlalBildir(kaydedilen);
 
         return toDto(kaydedilen);
     }
@@ -125,7 +133,9 @@ public class IhlalService {
 
         ihlal.setDurum(IhlalDurumu.HATALI_TESPIT);
         ihlal.setReddedenKullanici(yonetici);
-        ihlal.setRedZamani(LocalDateTime.now());
+        LocalDateTime redZamani = LocalDateTime.now();
+        ihlal.setRedZamani(redZamani);
+        ihlal.setSureSaniye(acikSureSaniye(ihlal.getTespitZamani(), redZamani));
         Ihlal guncellenen = ihlalRepository.save(ihlal);
 
         IslemLog log = new IslemLog();
@@ -136,7 +146,6 @@ public class IhlalService {
         log.setDetay(dto != null ? dto.redNedeni() : null);
         islemLogRepository.save(log);
 
-        // MODUL-6: reddedilen orijinal kanit fine-tune havuzuna isaretlenir/kopyalanir.
         fileStorageService.finetuneHavuzunaKopyala(
                 guncellenen.getOrijinalFotoYolu(),
                 guncellenen.getId(),
@@ -146,12 +155,8 @@ public class IhlalService {
         return toDto(guncellenen);
     }
 
-    /**
-     * AKTIF ihlali COZULDU olarak isaretler. Formen yalnizca kendi bolgesindeki
-     * kayitlari cozebilir; yonetici tum fabrika kayitlarini cozebilir.
-     */
     @Transactional
-    public IhlalResponseDTO coz(Long id, AuthenticatedUser user) {
+    public IhlalResponseDTO coz(Long id, IhlalCozRequestDTO dto, AuthenticatedUser user) {
         Ihlal ihlal = bul(id);
         bolgeErisimKontrol(ihlal, user);
 
@@ -162,9 +167,17 @@ public class IhlalService {
         Kullanici cozen = kullaniciRepository.findById(user.kullaniciId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Kullanici bulunamadi: " + user.kullaniciId()));
 
+        String not = dto != null && dto.not() != null ? dto.not().trim() : null;
+        if (not != null && not.isBlank()) {
+            not = null;
+        }
+
         ihlal.setDurum(IhlalDurumu.COZULDU);
         ihlal.setCozenKullanici(cozen);
-        ihlal.setCozmeZamani(LocalDateTime.now());
+        LocalDateTime cozmeZamani = LocalDateTime.now();
+        ihlal.setCozmeZamani(cozmeZamani);
+        ihlal.setCozNotu(not);
+        ihlal.setSureSaniye(acikSureSaniye(ihlal.getTespitZamani(), cozmeZamani));
         Ihlal guncellenen = ihlalRepository.save(ihlal);
 
         IslemLog log = new IslemLog();
@@ -172,16 +185,12 @@ public class IhlalService {
         log.setIslemTipi("IHLAL_COZME");
         log.setIlgiliIhlal(guncellenen);
         log.setIslemZamani(LocalDateTime.now());
-        log.setDetay("Ihlal cozuldu olarak isaretlendi");
+        log.setDetay(not != null ? not : "Ihlal cozuldu olarak isaretlendi");
         islemLogRepository.save(log);
 
         return toDto(guncellenen);
     }
 
-    /**
-     * Mevcut HATALI_TESPIT kayitlarinin orijinal fotolarini fine-tune havuzuna
-     * geriye donuk kopyalar (idempotent).
-     */
     @Transactional(readOnly = true)
     public FinetuneHavuzSenkronDTO finetuneHavuzunuSenkronizeEt() {
         List<Ihlal> reddedilenler = ihlalRepository.findByDurum(IhlalDurumu.HATALI_TESPIT);
@@ -240,10 +249,6 @@ public class IhlalService {
                 .toList();
     }
 
-    /**
-     * Personel bazli ihlal analizi: toplam ihlal ve en cok ihlal edilen kategori.
-     * HATALI_TESPIT kayitlari analize dahil edilmez.
-     */
     public List<PersonelIstatistikDTO> personelIstatistik(AuthenticatedUser user) {
         List<Ihlal> kapsam = isFormen(user)
                 ? ihlalRepository.findByBolgeId(user.bolgeId())
@@ -276,24 +281,53 @@ public class IhlalService {
                 .toList();
     }
 
+    /**
+     * False-positive / model kalite ozeti: reddet (HATALI_TESPIT) orani ve haftalik trend.
+     */
+    public KaliteIstatistikDTO kaliteIstatistik(AuthenticatedUser user) {
+        LocalDateTime simdi = LocalDateTime.now();
+        LocalDateTime baslangic8Hafta = LocalDate.now().minusWeeks(7).atStartOfDay();
+
+        List<Ihlal> kapsam = isFormen(user)
+                ? ihlalRepository.findByBolgeIdAndTespitZamaniBetween(user.bolgeId(), baslangic8Hafta, simdi)
+                : ihlalRepository.findByTespitZamaniBetween(baslangic8Hafta, simdi);
+
+        int toplam = kapsam.size();
+        int reddedilen = (int) kapsam.stream().filter(i -> i.getDurum() == IhlalDurumu.HATALI_TESPIT).count();
+        double fp = toplam == 0 ? 0.0 : Math.round((reddedilen * 1000.0) / toplam) / 10.0;
+
+        List<KaliteIstatistikDTO.HaftalikKaliteNoktasi> trend = new ArrayList<>();
+        for (int w = 7; w >= 0; w--) {
+            LocalDate haftaBas = LocalDate.now().minusWeeks(w);
+            LocalDateTime hBas = haftaBas.atStartOfDay();
+            LocalDateTime hBit = haftaBas.plusDays(6).atTime(LocalTime.MAX);
+            List<Ihlal> hafta = kapsam.stream()
+                    .filter(i -> !i.getTespitZamani().isBefore(hBas) && !i.getTespitZamani().isAfter(hBit))
+                    .toList();
+            int t = hafta.size();
+            int r = (int) hafta.stream().filter(i -> i.getDurum() == IhlalDurumu.HATALI_TESPIT).count();
+            double oran = t == 0 ? 0.0 : Math.round((r * 1000.0) / t) / 10.0;
+            String etiket = haftaBas.format(HAFTA_ETIKET) + "-" + haftaBas.plusDays(6).format(HAFTA_ETIKET);
+            trend.add(new KaliteIstatistikDTO.HaftalikKaliteNoktasi(etiket, t, r, oran));
+        }
+
+        return new KaliteIstatistikDTO(
+                toplam,
+                reddedilen,
+                fp,
+                fileStorageService.finetuneHavuzDosyaSayisi(),
+                trend
+        );
+    }
+
     private Personel personelCozumle(Long personelId, String sicilNo) {
         if (personelId != null) {
             return personelRepository.findById(personelId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personel bulunamadi: " + personelId));
         }
         if (sicilNo != null && !sicilNo.isBlank()) {
-            String aramaNo = sicilNo.trim();
-            java.util.Optional<Personel> bulunan = personelRepository.findBySicilNoIgnoreCase(aramaNo);
-            if (bulunan.isEmpty()) {
-                // Yuz tanima etiketindeki alt cizgileri bosluga cevirip ad_soyad ile de dene (orn: "Beyza_Erdem" -> "Beyza Erdem")
-                bulunan = personelRepository.findByAdSoyadIgnoreCase(aramaNo.replace("_", " "));
-            }
-            if (bulunan.isEmpty()) {
-                org.slf4j.LoggerFactory.getLogger(IhlalService.class)
-                        .warn("Yuz tanima sicil no veya ad soyad ile eslesmedi, personel atanmadi: '{}'", aramaNo);
-                return null;
-            }
-            return bulunan.get();
+            return personelRepository.findBySicilNo(sicilNo.trim())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personel bulunamadi (sicil): " + sicilNo));
         }
         return null;
     }
@@ -332,8 +366,18 @@ public class IhlalService {
                 ihlal.getDurum().name(),
                 personel != null ? personel.getId() : null,
                 personel != null ? personel.getAdSoyad() : null,
-                personel != null ? personel.getSicilNo() : null
+                personel != null ? personel.getSicilNo() : null,
+                ihlal.getCozNotu(),
+                ihlal.getSureSaniye()
         );
+    }
+
+    private static int acikSureSaniye(LocalDateTime baslangic, LocalDateTime bitis) {
+        if (baslangic == null || bitis == null) {
+            return 0;
+        }
+        long saniye = Duration.between(baslangic, bitis).getSeconds();
+        return (int) Math.max(0, saniye);
     }
 
     private record Anahtar(String bolgeAdi, String ihlalTipiAdi) {

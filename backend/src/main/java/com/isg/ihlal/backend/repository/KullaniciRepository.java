@@ -16,4 +16,6 @@ public interface KullaniciRepository extends JpaRepository<Kullanici, Long> {
     Optional<Kullanici> findByKullaniciAdi(String kullaniciAdi);
 
     boolean existsByKullaniciAdi(String kullaniciAdi);
+
+    boolean existsByKullaniciAdiAndIdNot(String kullaniciAdi, Long id);
 }

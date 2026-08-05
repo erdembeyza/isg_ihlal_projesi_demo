@@ -29,10 +29,13 @@ public class IslemLog {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "kullanici_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "kullanici_id")
     private Kullanici kullanici;
+
+    @Size(max = 50)
+    @Column(name = "denenen_kullanici_adi", length = 50)
+    private String denenenKullaniciAdi;
 
     @NotBlank
     @Size(max = 50)
@@ -107,5 +110,13 @@ public class IslemLog {
 
     public void setDetay(String detay) {
         this.detay = detay;
+    }
+
+    public String getDenenenKullaniciAdi() {
+        return denenenKullaniciAdi;
+    }
+
+    public void setDenenenKullaniciAdi(String denenenKullaniciAdi) {
+        this.denenenKullaniciAdi = denenenKullaniciAdi;
     }
 }

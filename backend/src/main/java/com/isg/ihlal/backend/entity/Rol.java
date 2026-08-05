@@ -8,5 +8,7 @@ package com.isg.ihlal.backend.entity;
 public enum Rol {
     ISG_YONETICI,
     FORMEN,
-    AI_CORE_SERVIS
+    AI_CORE_SERVIS,
+    /** Salt-okunur ust yonetim / misafir paneli. */
+    GORUNTULEYICI
 }

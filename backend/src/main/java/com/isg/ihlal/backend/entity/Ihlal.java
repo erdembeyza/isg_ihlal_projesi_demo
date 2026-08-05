@@ -73,6 +73,13 @@ public class Ihlal {
     @Column(name = "cozme_zamani")
     private LocalDateTime cozmeZamani;
 
+    @Size(max = 500)
+    @Column(name = "coz_notu", length = 500)
+    private String cozNotu;
+
+    @Column(name = "sure_saniye")
+    private Integer sureSaniye;
+
     @Column(name = "olusturma_zamani", nullable = false, updatable = false)
     private LocalDateTime olusturmaZamani;
 
@@ -175,6 +182,22 @@ public class Ihlal {
 
     public void setCozmeZamani(LocalDateTime cozmeZamani) {
         this.cozmeZamani = cozmeZamani;
+    }
+
+    public String getCozNotu() {
+        return cozNotu;
+    }
+
+    public void setCozNotu(String cozNotu) {
+        this.cozNotu = cozNotu;
+    }
+
+    public Integer getSureSaniye() {
+        return sureSaniye;
+    }
+
+    public void setSureSaniye(Integer sureSaniye) {
+        this.sureSaniye = sureSaniye;
     }
 
     public LocalDateTime getOlusturmaZamani() {
