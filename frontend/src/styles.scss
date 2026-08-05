@@ -21,6 +21,11 @@ body {
   line-height: normal;
 }
 
+app-root {
+  display: block;
+  min-height: 100%;
+}
+
 a {
   color: var(--erdemir-blue);
 }

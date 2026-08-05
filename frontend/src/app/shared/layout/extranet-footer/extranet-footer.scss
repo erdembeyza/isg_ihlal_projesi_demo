@@ -1,48 +1,61 @@
 /* Referans: https://www.erdemironline.com/Extranet/#/
- * Koyu gri footer, footer_bg görsel dokusu
+ * Alt navbar – üst navbar ile aynı yükseklik, sabit konum
  */
 
+:host {
+  display: block;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--extranet-footer-h, 78px);
+}
+
 .extranet-footer {
-  position: relative;
-  z-index: 10;
-  margin-top: auto;
+  height: 100%;
   background:
     var(--erdemir-footer)
     url('/assets/images/footer_bg.85388c2b6ed4c831.png') center / cover no-repeat;
   color: rgba(255, 255, 255, 0.88);
-  padding: 0.65rem 1.5rem;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  overflow: hidden;
 
   .footer-icerik {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 0.5rem 1.25rem;
+    column-gap: 1.1rem;
+    row-gap: 0.15rem;
     max-width: 1280px;
     margin: 0 auto;
+    width: 100%;
   }
 
   .footer-logo {
-    height: 26px;
+    height: 40px;
     width: auto;
-    /* Orijinal siteyle aynı: logo beyaz yapılır */
-    filter: brightness(0) invert(1);
-    opacity: 0.9;
+    display: block;
+    opacity: 0.95;
   }
 
   .footer-orta {
     display: flex;
     align-items: center;
     gap: 0.65rem;
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.84rem;
+    color: rgba(255, 255, 255, 0.85);
 
     a {
-      color: rgba(255, 255, 255, 0.8);
+      color: rgba(255, 255, 255, 0.85);
       text-decoration: none;
 
       &:hover {
         text-decoration: underline;
-        color: rgba(255, 255, 255, 1);
+        color: #fff;
       }
     }
 
@@ -56,8 +69,8 @@
     display: flex;
     align-items: center;
     gap: 0.3rem;
-    font-size: 0.78rem;
-    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.84rem;
+    color: rgba(255, 255, 255, 0.8);
     margin-left: auto;
     cursor: default;
 
@@ -69,17 +82,21 @@
   .telif {
     width: 100%;
     margin: 0;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     text-align: right;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.65);
     letter-spacing: 0.01em;
+    line-height: 1.2;
   }
 }
 
-/* ── Mobil ── */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .extranet-footer {
-    padding: 0.65rem 1rem;
+    padding: 0 1rem;
+
+    .footer-logo {
+      height: 34px;
+    }
 
     .dil-secici {
       margin-left: 0;

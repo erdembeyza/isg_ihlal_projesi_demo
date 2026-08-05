@@ -1,9 +1,10 @@
 <app-extranet-shell>
+  <div class="giris-sarici">
   <p class="hosgeldin-metni">Erdemir Online'a Hoş Geldiniz.</p>
 
   <div class="giris-karti">
     <div class="logo-paneli">
-      <img src="assets/images/erdemir-logo-large.svg" alt="OYAK Maden Metalurji" class="buyuk-logo" />
+      <img src="/assets/images/erdemir-logo-large.png" alt="OYAK Maden Metalurji" class="buyuk-logo" />
     </div>
 
     <form class="form-paneli" [formGroup]="form" (ngSubmit)="girisYap()" novalidate>
@@ -76,6 +77,7 @@
         </button>
       </div>
     </form>
+  </div>
   </div>
 
   <!-- ══ Pop-It Mesaj Modalı ══ -->

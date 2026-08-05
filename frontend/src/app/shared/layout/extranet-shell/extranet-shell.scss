@@ -1,21 +1,33 @@
 /* Referans: https://www.erdemironline.com/Extranet/#/
- * Koyu sanayi arka planı + hafif overlay katmanı
+ * Gece fabrika arka planı + sabit üst/alt navbar alanı
  */
 
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .extranet-shell {
-  min-height: 100vh;
+  --extranet-header-h: 78px;
+  --extranet-footer-h: 78px;
+
+  width: 100%;
+  height: 100dvh;
+  max-height: 100dvh;
   display: flex;
   flex-direction: column;
   position: relative;
-  background: var(--erdemir-bg-dark);
+  background: #0b1220;
+  overflow: hidden;
 }
 
-/* Ana arkaplan: fabrika/sanayi fotoğrafı + koyu gradyan overlay */
+/* Ana arkaplan */
 .arkaplan-katmani {
   position: fixed;
   inset: 0;
   background:
-    url('/assets/images/popup-bg.48bbaf43e95291de.png') center / cover no-repeat;
+    url('/assets/images/anasayfa-bg.jpg') center center / cover no-repeat;
   z-index: 0;
 
   &::after {
@@ -24,30 +36,37 @@
     inset: 0;
     background: linear-gradient(
       180deg,
-      rgba(28, 28, 28, 0.45) 0%,
-      rgba(28, 28, 28, 0.60) 100%
+      rgba(0, 0, 0, 0.6) 0%,
+      rgba(255, 255, 255, 0) 65%
     );
   }
 }
 
-/* İkinci overlay: doku/örüntü katmanı */
+/* Yıldız/ağ parçacık katmanı */
 .overlay-katmani {
   position: fixed;
   inset: 0;
-  background: url('/assets/images/list_bg_overlay.4eda8053c9978fdf.png') center / cover no-repeat;
-  opacity: 0.3;
+  background: url('/assets/images/anasayfa-particles.svg') center / cover no-repeat;
+  opacity: 0.25;
   z-index: 1;
   pointer-events: none;
 }
 
-/* Sayfa içeriği */
+/* İçerik: sabit header/footer arasında kalan alan */
 .extranet-icerik {
   position: relative;
   z-index: 2;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: var(--extranet-header-h);
+  margin-bottom: var(--extranet-footer-h);
+  height: calc(100dvh - var(--extranet-header-h) - var(--extranet-footer-h));
   display: flex;
   flex-direction: column;
   align-items: stretch;
   justify-content: center;
-  padding: 1.5rem 1rem 2rem;
+  padding: 1rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-sizing: border-box;
 }
