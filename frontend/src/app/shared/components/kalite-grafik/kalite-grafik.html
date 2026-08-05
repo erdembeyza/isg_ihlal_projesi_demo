@@ -1,0 +1,13 @@
+@if (!kalite()) {
+  <p class="bos">Kalite verisi yükleniyor…</p>
+} @else {
+  <div class="ozet">
+    <div><span>Toplam</span><strong>{{ kalite()!.toplamIhlal }}</strong></div>
+    <div><span>Reddedilen</span><strong>{{ kalite()!.reddedilen }}</strong></div>
+    <div><span>FP oranı</span><strong>%{{ kalite()!.falsePositiveOrani }}</strong></div>
+    <div><span>Fine-tune havuz</span><strong>{{ kalite()!.finetuneHavuzDosyaSayisi }}</strong></div>
+  </div>
+  <div class="grafik">
+    <canvas baseChart type="line" [data]="chartData()" [options]="chartOptions"></canvas>
+  </div>
+}

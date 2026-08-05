@@ -22,7 +22,8 @@ export class Login {
   private readonly router = inject(Router);
 
   readonly gonderiliyor = signal(false);
-  readonly hataMesaji = signal<string | null>(null);
+  readonly sifreHataMesaji = signal<string | null>(null);
+  readonly genelHataMesaji = signal<string | null>(null);
   readonly sifreGorunur = signal(false);
   readonly popItAcik = signal(false);
   readonly popItMesaji = signal('Yöneticiniz ile iletişime geçiniz.');
@@ -52,7 +53,8 @@ export class Login {
     }
 
     this.gonderiliyor.set(true);
-    this.hataMesaji.set(null);
+    this.sifreHataMesaji.set(null);
+    this.genelHataMesaji.set(null);
 
     this.authService.login(this.form.getRawValue()).subscribe({
       next: (yanit) => {
@@ -61,18 +63,20 @@ export class Login {
           this.router.navigate(['/yonetici']);
         } else if (yanit.rol === 'FORMEN') {
           this.router.navigate(['/formen']);
+        } else if (yanit.rol === 'GORUNTULEYICI') {
+          this.router.navigate(['/izleyici']);
         } else {
           this.authService.logout();
-          this.hataMesaji.set('Bu hesap panel girişi için kullanılamaz.');
+          this.sifreHataMesaji.set('Bu hesap panel girişi için kullanılamaz.');
         }
       },
       error: (hata: HttpErrorResponse) => {
         this.gonderiliyor.set(false);
-        this.hataMesaji.set(
-          hata.status === 401
-            ? 'Kullanıcı adı veya parola hatalı.'
-            : 'Giriş yapılamadı, lütfen daha sonra tekrar deneyin.'
-        );
+        if (hata.status === 401) {
+          this.sifreHataMesaji.set('Parolanız hatalı.');
+        } else {
+          this.genelHataMesaji.set('Giriş yapılamadı, lütfen daha sonra tekrar deneyin.');
+        }
       },
     });
   }

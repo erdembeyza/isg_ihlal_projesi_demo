@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { adminGuard } from './core/guards/admin.guard';
 import { foremanGuard } from './core/guards/foreman.guard';
+import { viewerGuard } from './core/guards/viewer.guard';
 
 export const routes: Routes = [
   {
@@ -36,6 +37,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/foreman-dashboard/foreman-dashboard').then((m) => m.ForemanDashboard),
     canActivate: [foremanGuard],
+  },
+  {
+    path: 'izleyici',
+    loadComponent: () =>
+      import('./features/viewer-dashboard/viewer-dashboard').then((m) => m.ViewerDashboard),
+    canActivate: [viewerGuard],
   },
   { path: '**', redirectTo: '' },
 ];

@@ -1,0 +1,208 @@
+@if (acik()) {
+  <div class="ky-arka" (click)="arkaPlanaTiklandi($event)" role="presentation">
+    <section class="ky-sayfa" role="dialog" aria-label="Kullanıcı yönetimi">
+      <header class="ky-baslik">
+        <div>
+          <p class="ky-ust-etiket">Yönetim</p>
+          <h2>Kullanıcı Yönetimi</h2>
+          <p class="ky-alt">Formen, yönetici ve izleyici hesaplarını görüntüleyin ve güncelleyin.</p>
+        </div>
+        <div class="ky-baslik-aksiyonlar">
+          <button
+            type="button"
+            class="ikincil-btn"
+            (click)="kullanicilariYenile()"
+            [disabled]="yukleniyor()"
+          >
+            {{ yukleniyor() ? 'Yükleniyor…' : 'Yenile' }}
+          </button>
+          <button type="button" class="kapat-btn" (click)="kapat()" aria-label="Kapat">✕</button>
+        </div>
+      </header>
+
+      @if (mesaj(); as m) {
+        <p class="ky-mesaj" [class.hata]="m.tur === 'hata'">{{ m.metin }}</p>
+      }
+
+      <div class="ky-icerik">
+        <section class="ky-kart">
+          <h3>Yeni Kullanıcı Ekle</h3>
+          <form [formGroup]="yeniKullaniciForm" (ngSubmit)="yeniKullaniciOlustur()" class="ky-form grid-2">
+            <div>
+              <label for="ykKullaniciAdi">Kullanıcı adı</label>
+              <input id="ykKullaniciAdi" type="text" formControlName="kullaniciAdi" />
+            </div>
+            <div>
+              <label for="ykSifre">Parola</label>
+              <input id="ykSifre" type="password" formControlName="sifre" />
+            </div>
+            <div>
+              <label for="ykAdSoyad">Ad soyad</label>
+              <input id="ykAdSoyad" type="text" formControlName="adSoyad" />
+            </div>
+            <div>
+              <label for="ykRol">Rol</label>
+              <select id="ykRol" formControlName="rol">
+                <option value="FORMEN">Formen</option>
+                <option value="ISG_YONETICI">İSG Yöneticisi</option>
+                <option value="GORUNTULEYICI">Görüntüleyici</option>
+              </select>
+            </div>
+            @if (yeniKullaniciForm.controls.rol.value === 'FORMEN') {
+              <div class="tam-genislik">
+                <label for="ykBolge">Bölge</label>
+                <select id="ykBolge" formControlName="bolgeId">
+                  <option [value]="''">Seçiniz…</option>
+                  @for (bolge of bolgeler(); track bolge.id) {
+                    <option [value]="bolge.id">{{ bolge.bolgeAdi }}</option>
+                  }
+                </select>
+              </div>
+            }
+            <div class="tam-genislik">
+              <button type="submit" class="birincil-btn" [disabled]="kaydediliyor()">
+                {{ kaydediliyor() ? 'Oluşturuluyor…' : 'Kullanıcı Oluştur' }}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="ky-kart kayitli-kullanicilar-kart">
+          <div class="kayitli-baslik-satir">
+            <div>
+              <h3>Kayıtlı Kullanıcılar ({{ kullanicilar().length }})</h3>
+              <p class="kart-aciklama">Veritabanındaki tüm panel kullanıcıları.</p>
+            </div>
+          </div>
+
+          @if (yukleniyor() && !kullanicilar().length) {
+            <p class="yukleniyor">Veritabanından kullanıcılar yükleniyor…</p>
+          } @else {
+            <div class="kullanici-gruplari">
+              @for (grup of kullaniciGruplari(); track grup.rol) {
+                <div class="kullanici-grup" [class.acik]="grupAcikMi(grup.rol)">
+                  <button
+                    type="button"
+                    class="grup-toggle"
+                    (click)="grupToggle(grup.rol)"
+                    [attr.aria-expanded]="grupAcikMi(grup.rol)"
+                  >
+                    <span class="grup-baslik-blok">
+                      <span class="grup-baslik">{{ grup.etiket }}</span>
+                      <span class="grup-alt">{{ grup.aciklama }}</span>
+                    </span>
+                    <span class="grup-sag">
+                      <span class="grup-adet">{{ grup.liste.length }}</span>
+                      <span class="grup-ok" aria-hidden="true">{{ grupAcikMi(grup.rol) ? '▲' : '▼' }}</span>
+                    </span>
+                  </button>
+
+                  @if (grupAcikMi(grup.rol)) {
+                    <div class="grup-icerik">
+                      @if (grup.liste.length) {
+                        <div class="kullanici-listesi">
+                          @for (k of grup.liste; track k.id) {
+                            <article class="kullanici-satiri" [class.duzenleme]="duzenlenenId() === k.id">
+                              <div class="kullanici-ozet">
+                                <div class="kullanici-baslik">
+                                  <strong>{{ k.adSoyad }}</strong>
+                                  <span class="kullanici-adi">{{ k.kullaniciAdi }}</span>
+                                </div>
+                                <div class="kullanici-meta">
+                                  <span class="rol-badge">{{ rolEtiketi(k.rol) }}</span>
+                                  @if (k.bolgeAdi) {
+                                    <span class="bolge-badge">{{ k.bolgeAdi }}</span>
+                                  } @else if (k.rol === 'FORMEN') {
+                                    <span class="bolge-badge uyari">Bölge atanmamış</span>
+                                  }
+                                  @if (k.gorev) {
+                                    <span class="gorev-badge">{{ k.gorev }}</span>
+                                  }
+                                  <span class="durum-etiketi" [class.pasif]="!k.aktifMi">
+                                    {{ k.aktifMi ? 'Aktif' : 'Pasif' }}
+                                  </span>
+                                </div>
+                              </div>
+
+                              @if (duzenlenenId() === k.id) {
+                                <ng-container *ngTemplateOutlet="duzenleFormSablon; context: { $implicit: k }" />
+                              } @else {
+                                <div class="kullanici-aksiyonlar">
+                                  <button type="button" class="ikincil-btn" (click)="duzenlemeyiAc(k)">Düzenle</button>
+                                </div>
+                              }
+                            </article>
+                          }
+                        </div>
+                      } @else {
+                        <p class="grup-bos">Bu grupta kayıtlı kullanıcı yok.</p>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </section>
+      </div>
+
+      <ng-template #duzenleFormSablon let-k>
+        <form [formGroup]="duzenleForm" (ngSubmit)="kullaniciKaydet(k.id)" class="ky-form grid-2 duzenle-form">
+          <div>
+            <label>Kullanıcı adı</label>
+            <input type="text" formControlName="kullaniciAdi" autocomplete="username" />
+          </div>
+          <div>
+            <label>Ad soyad</label>
+            <input type="text" formControlName="adSoyad" />
+          </div>
+          <div>
+            <label>Rol / yetki</label>
+            <select formControlName="rol">
+              <option value="FORMEN">Formen</option>
+              <option value="ISG_YONETICI">İSG Yöneticisi</option>
+              <option value="GORUNTULEYICI">Görüntüleyici</option>
+            </select>
+          </div>
+          <div>
+            <label>Yeni parola</label>
+            <input type="password" formControlName="yeniSifre" placeholder="Boş bırak = değişmez" autocomplete="new-password" />
+          </div>
+          <div>
+            <label>E-posta</label>
+            <input type="email" formControlName="eposta" placeholder="opsiyonel" />
+          </div>
+          <div>
+            <label>Telefon</label>
+            <input type="text" formControlName="telefon" placeholder="opsiyonel" />
+          </div>
+          <div class="tam-genislik">
+            <label>Görev / unvan</label>
+            <input type="text" formControlName="gorev" placeholder="opsiyonel" />
+          </div>
+          @if (duzenleForm.controls.rol.value === 'FORMEN') {
+            <div class="tam-genislik">
+              <label>Bölge</label>
+              <select formControlName="bolgeId">
+                <option [value]="''">Seçiniz…</option>
+                @for (bolge of bolgeler(); track bolge.id) {
+                  <option [value]="bolge.id">{{ bolge.bolgeAdi }}</option>
+                }
+              </select>
+            </div>
+          }
+          <div class="tam-genislik">
+            <label class="checkbox-satir">
+              <input type="checkbox" formControlName="aktifMi" />
+              Hesap aktif
+            </label>
+          </div>
+          <div class="form-aksiyonlar tam-genislik">
+            <button type="button" class="ikincil-btn" (click)="duzenlemeyiIptal()">Vazgeç</button>
+            <button type="submit" class="birincil-btn" [disabled]="kaydediliyor()">Kaydet</button>
+          </div>
+        </form>
+      </ng-template>
+    </section>
+  </div>
+}

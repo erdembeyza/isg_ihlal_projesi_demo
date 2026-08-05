@@ -1,0 +1,215 @@
+.bos {
+  margin: 0.75rem 0 0;
+  color: var(--erdemir-text-muted);
+  font-size: 0.9rem;
+}
+
+.filtre-satiri {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.filtre-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--erdemir-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--erdemir-blue-dark);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    border-color: #c5cdd8;
+    background: #f8fafc;
+  }
+
+  &.aktif {
+    background: var(--erdemir-blue-dark);
+    border-color: var(--erdemir-blue-dark);
+    color: #fff;
+
+    .chip-adet {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+  }
+}
+
+.chip-adet {
+  min-width: 1.25rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: var(--erdemir-text-muted);
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+.tablo-sarmalayici {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--erdemir-border);
+  border-radius: 8px;
+  background: #fff;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.84rem;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.65rem 0.75rem;
+  background: #f4f7fb;
+  color: var(--erdemir-blue-dark);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid var(--erdemir-border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 0.7rem 0.75rem;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: middle;
+}
+
+tbody tr.hatali-giris-satiri td {
+  background: #fffbeb;
+}
+
+tbody tr.hatali-giris-satiri:hover td {
+  background: #fef3c7;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover td {
+  background: #fafbfd;
+}
+
+.sutun-zaman {
+  width: 8.5rem;
+  white-space: nowrap;
+
+  time {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    line-height: 1.25;
+  }
+
+  .saat {
+    color: var(--erdemir-text-muted);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.sutun-kullanici {
+  min-width: 9rem;
+
+  .ad {
+    display: block;
+    font-weight: 600;
+    color: var(--erdemir-blue-dark);
+  }
+
+  .meta {
+    display: block;
+    margin-top: 0.1rem;
+    color: var(--erdemir-text-muted);
+    font-size: 0.75rem;
+  }
+}
+
+.sutun-islem {
+  width: 7.5rem;
+}
+
+.sutun-ihlal {
+  width: 5rem;
+  text-align: center;
+}
+
+.ihlal-id {
+  display: inline-block;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  background: #eef2f7;
+  color: var(--erdemir-blue-dark);
+  font-weight: 700;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.sutun-detay {
+  min-width: 10rem;
+  max-width: 22rem;
+  color: #334155;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.bos-hucre {
+  color: #cbd5e1;
+}
+
+.tip-rozet {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+
+  &.giris {
+    background: #e0f2fe;
+    color: #075985;
+  }
+
+  &.giris-hatali {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.cozme {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  &.reddetme {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  &.diger {
+    background: #f1f5f9;
+    color: #475569;
+  }
+}
+
+@media (max-width: 700px) {
+  .sutun-detay {
+    min-width: 8rem;
+  }
+}

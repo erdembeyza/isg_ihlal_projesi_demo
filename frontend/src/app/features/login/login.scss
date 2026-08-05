@@ -144,6 +144,12 @@
   color: #f44336;
   font-size: 0.75rem;
   margin-top: 0.2rem;
+
+  &.giris-hatasi {
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
 }
 
 /* ── Genel hata kutusu ── */

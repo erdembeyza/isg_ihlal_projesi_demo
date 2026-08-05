@@ -2,16 +2,17 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { LoginRequest, LoginResponse, Rol } from '../models/auth.model';
+import {
+  LoginRequest,
+  LoginResponse,
+  Profil,
+  ProfilGuncelleRequest,
+  Rol,
+  SifreDegistirRequest,
+} from '../models/auth.model';
 
 const STORAGE_KEY = 'isg_oturum';
 
-/**
- * MODUL-3 (tasarim_mimari.md): giris/oturum yonetimi.
- * Basarili girişte backend'den donen LoginResponseDTO (token + rol + adSoyad +
- * bolgeId) tarayicida localStorage'a yazilir; sayfa yenilendiginde de oturum
- * buradan geri yuklenir (signal ile reaktif olarak uygulamaya yayilir).
- */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly oturum = signal<LoginResponse | null>(this.localStorageDanOku());
@@ -21,6 +22,7 @@ export class AuthService {
   readonly rol = computed<Rol | null>(() => this.oturum()?.rol ?? null);
   readonly isYonetici = computed(() => this.rol() === 'ISG_YONETICI');
   readonly isFormen = computed(() => this.rol() === 'FORMEN');
+  readonly isGoruntuleyici = computed(() => this.rol() === 'GORUNTULEYICI');
 
   constructor(private readonly http: HttpClient) {}
 
@@ -28,6 +30,20 @@ export class AuthService {
     return this.http
       .post<LoginResponse>(`${environment.apiUrl}/auth/login`, istek)
       .pipe(tap((yanit) => this.oturumuBaslat(yanit)));
+  }
+
+  profilGetir(): Observable<Profil> {
+    return this.http.get<Profil>(`${environment.apiUrl}/auth/profil`);
+  }
+
+  profilGuncelle(istek: ProfilGuncelleRequest): Observable<Profil> {
+    return this.http.put<Profil>(`${environment.apiUrl}/auth/profil`, istek).pipe(
+      tap((profil) => this.oturumAdSoyadGuncelle(profil.adSoyad))
+    );
+  }
+
+  sifreDegistir(istek: SifreDegistirRequest): Observable<void> {
+    return this.http.put<void>(`${environment.apiUrl}/auth/sifre`, istek);
   }
 
   logout(): void {
@@ -42,6 +58,16 @@ export class AuthService {
   private oturumuBaslat(yanit: LoginResponse): void {
     this.oturum.set(yanit);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(yanit));
+  }
+
+  private oturumAdSoyadGuncelle(adSoyad: string): void {
+    const mevcut = this.oturum();
+    if (!mevcut) {
+      return;
+    }
+    const guncel = { ...mevcut, adSoyad };
+    this.oturum.set(guncel);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(guncel));
   }
 
   private localStorageDanOku(): LoginResponse | null {

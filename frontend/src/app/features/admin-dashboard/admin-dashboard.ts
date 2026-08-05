@@ -1,32 +1,29 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, viewChild } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { interval } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { BolgeService } from '../../core/services/bolge.service';
 import { IhlalService } from '../../core/services/ihlal.service';
-import { KullaniciService } from '../../core/services/kullanici.service';
 import { Bolge } from '../../core/models/bolge.model';
-import { Ihlal } from '../../core/models/ihlal.model';
-import { Rol } from '../../core/models/auth.model';
+import {
+  HaftalikRaporOzet,
+  Ihlal,
+  IslemLog,
+  KaliteIstatistik,
+  KameraDurum,
+} from '../../core/models/ihlal.model';
 import { IhlalListesiComponent } from '../../shared/components/ihlal-listesi/ihlal-listesi';
 import { IstatistikGrafikComponent } from '../../shared/components/istatistik-grafik/istatistik-grafik';
 import { IhlalDetayModalComponent } from '../../shared/components/ihlal-detay-modal/ihlal-detay-modal';
+import { KameraDurumPaneliComponent } from '../../shared/components/kamera-durum-paneli/kamera-durum-paneli';
+import { DenetimGunluguComponent } from '../../shared/components/denetim-gunlugu/denetim-gunlugu';
+import { KaliteGrafikComponent } from '../../shared/components/kalite-grafik/kalite-grafik';
 import { PanelShell } from '../../shared/layout/panel-shell/panel-shell';
 
 const TUMU = 'TÜMÜ';
-/** AI Core kameradan gelen yeni ihlalleri panelde gostermek icin yenileme araligi */
-const CANLI_YENILEME_MS = 5000;
+const CANLI_YENILEME_MS = 3000;
 
-/**
- * COMPONENT-2 (tasarim_mimari.md): Yonetici Dashboard'u.
- * Tum fabrika verisini (orijinal fotograflar) filtresiz ceker, bolge/tip
- * bazli filtreleme, istatistik grafigi, detay modali ve "Reddet" aksiyonunu
- * bir araya getirir. Ayrica MODUL-3 kapsaminda yeni formen/kullanici
- * tanimlama formunu barindirir (yalnizca ISG_YONETICI yetkili).
- */
 @Component({
   selector: 'app-admin-dashboard',
   standalone: true,
@@ -34,7 +31,9 @@ const CANLI_YENILEME_MS = 5000;
     IhlalListesiComponent,
     IstatistikGrafikComponent,
     IhlalDetayModalComponent,
-    ReactiveFormsModule,
+    KameraDurumPaneliComponent,
+    DenetimGunluguComponent,
+    KaliteGrafikComponent,
     PanelShell,
   ],
   templateUrl: './admin-dashboard.html',
@@ -45,16 +44,23 @@ export class AdminDashboard {
   private readonly router = inject(Router);
   private readonly ihlalService = inject(IhlalService);
   private readonly bolgeService = inject(BolgeService);
-  private readonly kullaniciService = inject(KullaniciService);
-  private readonly fb = inject(FormBuilder);
+  private readonly panelShell = viewChild(PanelShell);
 
   protected readonly TUMU = TUMU;
 
   protected readonly ihlaller = signal<Ihlal[]>([]);
   protected readonly istatistikler = signal<import('../../core/models/ihlal.model').IhlalIstatistik[]>([]);
   protected readonly bolgeler = signal<Bolge[]>([]);
+  protected readonly kameralar = signal<KameraDurum[]>([]);
+  protected readonly loglar = signal<IslemLog[]>([]);
+  protected readonly kalite = signal<KaliteIstatistik | null>(null);
+  protected readonly raporOzet = signal<HaftalikRaporOzet | null>(null);
   protected readonly yukleniyor = signal(true);
   protected readonly hataMesaji = signal<string | null>(null);
+  protected readonly pdfIndiriliyor = signal(false);
+  protected readonly senkronMesaji = signal<string | null>(null);
+  /** Denetim günlüğü varsayılan kapalı; toggle ile açılır. */
+  protected readonly denetimGunluguAcik = signal(false);
 
   protected readonly secilenBolge = signal<string>(TUMU);
   protected readonly secilenTip = signal<string>(TUMU);
@@ -87,22 +93,9 @@ export class AdminDashboard {
     return this.istatistikler().filter((i) => bolge === TUMU || i.bolgeAdi === bolge);
   });
 
-  protected readonly kullaniciFormuAcik = signal(false);
-  protected readonly kullaniciFormuGonderiliyor = signal(false);
-  protected readonly kullaniciFormuMesaji = signal<{ tur: 'basari' | 'hata'; metin: string } | null>(null);
-
-  protected readonly kullaniciForm = this.fb.nonNullable.group({
-    kullaniciAdi: ['', [Validators.required, Validators.minLength(3)]],
-    sifre: ['', [Validators.required, Validators.minLength(6)]],
-    adSoyad: ['', [Validators.required]],
-    rol: ['FORMEN' as Rol, [Validators.required]],
-    bolgeId: [null as number | null],
-  });
-
   constructor() {
     this.verileriYukle(true);
     this.bolgeService.listele().subscribe({ next: (bolgeler) => this.bolgeler.set(bolgeler) });
-    // Kamera / AI Core yeni ihlal gonderdikce panel otomatik guncellenir.
     interval(CANLI_YENILEME_MS)
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.verileriYukle(false));
@@ -128,6 +121,10 @@ export class AdminDashboard {
     });
 
     this.ihlalService.istatistik().subscribe({ next: (veri) => this.istatistikler.set(veri) });
+    this.ihlalService.kameraDurumlari().subscribe({ next: (k) => this.kameralar.set(k) });
+    this.ihlalService.islemLoglari(80).subscribe({ next: (l) => this.loglar.set(l) });
+    this.ihlalService.kaliteIstatistik().subscribe({ next: (k) => this.kalite.set(k) });
+    this.ihlalService.haftalikRaporOzet().subscribe({ next: (r) => this.raporOzet.set(r) });
   }
 
   bolgeFiltresiDegisti(bolge: string): void {
@@ -173,48 +170,44 @@ export class AdminDashboard {
     });
   }
 
-  kullaniciFormunuAcKapat(): void {
-    this.kullaniciFormuAcik.set(!this.kullaniciFormuAcik());
-    this.kullaniciFormuMesaji.set(null);
+  pdfIndir(): void {
+    this.pdfIndiriliyor.set(true);
+    this.ihlalService.haftalikRaporPdf().subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'haftalik-ihlal-raporu.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+        this.pdfIndiriliyor.set(false);
+      },
+      error: () => {
+        this.pdfIndiriliyor.set(false);
+        this.hataMesaji.set('PDF indirilemedi.');
+      },
+    });
   }
 
-  kullaniciOlustur(): void {
-    if (this.kullaniciForm.invalid) {
-      this.kullaniciForm.markAllAsTouched();
-      return;
-    }
+  finetuneSenkron(): void {
+    this.senkronMesaji.set(null);
+    this.ihlalService.finetuneSenkronize().subscribe({
+      next: (r) => {
+        this.senkronMesaji.set(
+          `Fine-tune senkron: toplam ${r.toplam}, kopyalanan ${r.kopyalanan}, atlanan ${r.atlanan}`
+        );
+        this.ihlalService.kaliteIstatistik().subscribe({ next: (k) => this.kalite.set(k) });
+      },
+      error: () => this.senkronMesaji.set('Fine-tune senkron başarısız.'),
+    });
+  }
 
-    const deger = this.kullaniciForm.getRawValue();
+  denetimGunlugunuAcKapat(): void {
+    this.denetimGunluguAcik.update((v) => !v);
+  }
 
-    if (deger.rol === 'FORMEN' && !deger.bolgeId) {
-      this.kullaniciFormuMesaji.set({ tur: 'hata', metin: 'Formen rolü için bölge seçimi zorunludur.' });
-      return;
-    }
-    this.kullaniciFormuGonderiliyor.set(true);
-    this.kullaniciFormuMesaji.set(null);
-
-    this.kullaniciService
-      .olustur({
-        kullaniciAdi: deger.kullaniciAdi,
-        sifre: deger.sifre,
-        adSoyad: deger.adSoyad,
-        rol: deger.rol,
-        bolgeId: deger.rol === 'FORMEN' ? deger.bolgeId : null,
-      })
-      .subscribe({
-        next: (yanit) => {
-          this.kullaniciFormuGonderiliyor.set(false);
-          this.kullaniciFormuMesaji.set({ tur: 'basari', metin: `"${yanit.kullaniciAdi}" kullanıcısı oluşturuldu.` });
-          this.kullaniciForm.reset({ kullaniciAdi: '', sifre: '', adSoyad: '', rol: 'FORMEN', bolgeId: null });
-        },
-        error: (hata: HttpErrorResponse) => {
-          this.kullaniciFormuGonderiliyor.set(false);
-          this.kullaniciFormuMesaji.set({
-            tur: 'hata',
-            metin: hata.status === 409 ? 'Bu kullanıcı adı zaten kayıtlı.' : 'Kullanıcı oluşturulamadı.',
-          });
-        },
-      });
+  kullaniciYonetiminiAc(): void {
+    this.panelShell()?.kullaniciYonetiminiAc();
   }
 
   cikisYap(): void {

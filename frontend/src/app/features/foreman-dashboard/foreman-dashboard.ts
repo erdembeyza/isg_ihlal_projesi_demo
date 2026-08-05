@@ -16,7 +16,7 @@ import { IhlalDetayModalComponent } from '../../shared/components/ihlal-detay-mo
 import { PanelShell } from '../../shared/layout/panel-shell/panel-shell';
 
 const TUMU = 'TÜMÜ';
-const CANLI_YENILEME_MS = 5000;
+const CANLI_YENILEME_MS = 3000;
 
 type RiskDurumu = {
   etiket: string;
@@ -165,9 +165,18 @@ export class ForemanDashboard {
   }
 
   ihlaliCoz(ihlal: Ihlal): void {
+    const notHam = window.prompt(
+      'Çözüm notu (opsiyonel — Enter ile boş bırakabilirsiniz):',
+      ''
+    );
+    if (notHam === null) {
+      return; // Vazgeçildi
+    }
+    const not = notHam.trim().slice(0, 500);
+
     this.aksiyonHatasi.set(null);
     this.cozuluyorId.set(ihlal.id);
-    this.ihlalService.coz(ihlal.id).subscribe({
+    this.ihlalService.coz(ihlal.id, { not: not || null }).subscribe({
       next: (guncel) => {
         this.ihlaller.update((liste) => liste.map((i) => (i.id === guncel.id ? guncel : i)));
         if (this.secilenIhlal()?.id === guncel.id) {

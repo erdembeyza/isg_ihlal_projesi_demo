@@ -1,8 +1,8 @@
 import { DatePipe } from '@angular/common';
-import { Component, inject, input, output, signal } from '@angular/core';
+import { Component, inject, input, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { AuthImgDirective } from '../../../core/directives/auth-img.directive';
 import { IhlalService } from '../../../core/services/ihlal.service';
-import { Ihlal, durumEtiketi } from '../../../core/models/ihlal.model';
+import { Ihlal, durumEtiketi, ihlalAcikSureMetni } from '../../../core/models/ihlal.model';
 
 /**
  * COMPONENT-6 (tasarim_mimari.md): secilen ihlalin fotografini (role gore
@@ -18,7 +18,7 @@ import { Ihlal, durumEtiketi } from '../../../core/models/ihlal.model';
   templateUrl: './ihlal-detay-modal.html',
   styleUrl: './ihlal-detay-modal.scss',
 })
-export class IhlalDetayModalComponent {
+export class IhlalDetayModalComponent implements OnInit, OnDestroy {
   protected readonly ihlalService = inject(IhlalService);
   protected readonly durumEtiketi = durumEtiketi;
 
@@ -31,6 +31,23 @@ export class IhlalDetayModalComponent {
 
   protected readonly redFormuAcik = signal(false);
   protected readonly redNedeni = signal('');
+  protected readonly simdi = signal(new Date());
+  private saatAraligi?: ReturnType<typeof setInterval>;
+
+  ngOnInit(): void {
+    this.saatAraligi = setInterval(() => this.simdi.set(new Date()), 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.saatAraligi) {
+      clearInterval(this.saatAraligi);
+    }
+  }
+
+  acikSure(kayit: Ihlal): string {
+    this.simdi();
+    return ihlalAcikSureMetni(kayit, this.simdi());
+  }
 
   redFormunuAc(): void {
     this.redFormuAcik.set(true);

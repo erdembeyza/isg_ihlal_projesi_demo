@@ -1,0 +1,31 @@
+@if (kameralar().length === 0) {
+  <p class="bos">Henüz kamera heartbeat alınmadı. AI Core çalışınca burada görünür.</p>
+} @else {
+  <div class="kamera-grid">
+    @for (k of kameralar(); track k.id) {
+      <article class="kamera-kart" [class.offline]="!k.onlineMi">
+        <div class="ust">
+          <strong>{{ k.kameraAdi }}</strong>
+          <span class="badge" [class.on]="k.onlineMi">{{ k.onlineMi ? 'Online' : 'Offline' }}</span>
+        </div>
+        <p class="bolge">{{ k.bolgeAdi }}</p>
+        <dl>
+          <div>
+            <dt>FPS</dt>
+            <dd>{{ k.fps != null ? k.fps.toFixed(1) : '—' }}</dd>
+          </div>
+          <div>
+            <dt>Son kare</dt>
+            <dd>
+              @if (k.sonKareZamani) {
+                {{ k.sonKareZamani | date: 'dd.MM.yyyy HH:mm:ss' }}
+              } @else {
+                —
+              }
+            </dd>
+          </div>
+        </dl>
+      </article>
+    }
+  </div>
+}

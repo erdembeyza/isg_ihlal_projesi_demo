@@ -38,13 +38,142 @@
 }
 
 .yukleniyor,
-.genel-hata {
+.genel-hata,
+.bilgi {
   text-align: center;
   color: var(--erdemir-text-muted);
 }
 
 .genel-hata {
   color: var(--erdemir-red);
+}
+
+.bilgi {
+  color: var(--erdemir-blue-dark);
+}
+
+.rapor-ozet {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+
+  div {
+    background: #f8fafc;
+    border: 1px solid var(--erdemir-border);
+    border-radius: var(--erdemir-radius);
+    padding: 0.65rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+
+    span {
+      font-size: 0.75rem;
+      color: var(--erdemir-text-muted);
+    }
+
+    strong {
+      font-size: 1.1rem;
+      color: var(--erdemir-blue-dark);
+    }
+  }
+}
+
+.risk-saat {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--erdemir-text-muted);
+}
+
+.denetim-kart {
+  &.kapali {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+  }
+}
+
+.denetim-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding: 0.1rem 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  color: var(--erdemir-blue-dark);
+
+  &:hover .denetim-baslik {
+    color: var(--erdemir-red);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--erdemir-red);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+}
+
+.denetim-baslik-blok {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.denetim-baslik {
+  font-size: 1.05rem;
+  font-weight: 700;
+  transition: color 0.15s ease;
+}
+
+.denetim-alt {
+  font-size: 0.8rem;
+  color: var(--erdemir-text-muted);
+  font-weight: 500;
+}
+
+.denetim-sag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.denetim-adet {
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: #eef2f7;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--erdemir-blue-dark);
+  white-space: nowrap;
+}
+
+.denetim-ok {
+  font-size: 0.7rem;
+  color: var(--erdemir-text-muted);
+}
+
+.denetim-icerik {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--erdemir-border);
+  animation: denetim-acilis 0.18s ease;
+}
+
+@keyframes denetim-acilis {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .liste-basligi {

@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, inject, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, OnDestroy, OnInit, output, signal } from '@angular/core';
 import { IhlalService } from '../../../core/services/ihlal.service';
-import { Ihlal, durumEtiketi } from '../../../core/models/ihlal.model';
+import { Ihlal, durumEtiketi, ihlalAcikSureMetni } from '../../../core/models/ihlal.model';
 import { AuthImgDirective } from '../../../core/directives/auth-img.directive';
 
 type SiralamaAlani = 'tespitZamani' | 'bolgeAdi' | 'ihlalTipiAdi' | 'personelAdi';
@@ -21,9 +21,10 @@ const SAYFA_BOYUTU = 8;
   templateUrl: './ihlal-listesi.html',
   styleUrl: './ihlal-listesi.scss',
 })
-export class IhlalListesiComponent {
+export class IhlalListesiComponent implements OnInit, OnDestroy {
   protected readonly ihlalService = inject(IhlalService);
   protected readonly durumEtiketi = durumEtiketi;
+  protected readonly ihlalAcikSureMetni = ihlalAcikSureMetni;
 
   readonly ihlaller = input.required<Ihlal[]>();
   /** Formen panelinde AKTIF ihlaller icin "Cozuldu Isaretle" butonu gosterilir. */
@@ -31,6 +32,9 @@ export class IhlalListesiComponent {
   readonly cozuluyorId = input<number | null>(null);
   readonly satirSecildi = output<Ihlal>();
   readonly cozuldu = output<Ihlal>();
+
+  protected readonly simdi = signal(new Date());
+  private saatAraligi?: ReturnType<typeof setInterval>;
 
   protected readonly sayfa = signal(0);
   protected readonly siralamaAlani = signal<SiralamaAlani>('tespitZamani');
@@ -58,6 +62,21 @@ export class IhlalListesiComponent {
     const baslangic = this.gecerliSayfa() * SAYFA_BOYUTU;
     return this.sirali().slice(baslangic, baslangic + SAYFA_BOYUTU);
   });
+
+  ngOnInit(): void {
+    this.saatAraligi = setInterval(() => this.simdi.set(new Date()), 1000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.saatAraligi) {
+      clearInterval(this.saatAraligi);
+    }
+  }
+
+  acikSure(ihlal: Ihlal): string {
+    this.simdi();
+    return ihlalAcikSureMetni(ihlal, this.simdi());
+  }
 
   siralaAlaninaGore(alan: SiralamaAlani): void {
     if (this.siralamaAlani() === alan) {

@@ -1,70 +1,68 @@
 <app-panel-shell
+  #panelShell
   panelAdi="İSG Yönetici Paneli"
   [kullaniciAdi]="authService.currentUser()?.adSoyad || 'Yönetici'"
   rolAdi="İSG Yöneticisi"
   (cikis)="cikisYap()"
 >
-  <button panelButonlari class="ikincil-buton" (click)="kullaniciFormunuAcKapat()">
-    {{ kullaniciFormuAcik() ? 'Formu Kapat' : '+ Yeni Kullanıcı' }}
+  <button panelButonlari class="ikincil-buton" (click)="pdfIndir()" [disabled]="pdfIndiriliyor()">
+    {{ pdfIndiriliyor() ? 'PDF…' : 'Haftalık PDF' }}
+  </button>
+  <button panelButonlari class="ikincil-buton" (click)="finetuneSenkron()">Fine-tune Senkron</button>
+  <button panelButonlari class="ikincil-buton" (click)="kullaniciYonetiminiAc()">
+    Kullanıcı Yönetimi
   </button>
 
   <main class="panel-icerik">
-    @if (kullaniciFormuAcik()) {
-    <section class="kart kullanici-formu-karti">
-      <h2>Yeni Formen / Yönetici Kullanıcısı Ekle</h2>
-      <form [formGroup]="kullaniciForm" (ngSubmit)="kullaniciOlustur()" class="kullanici-formu">
-        <div class="form-alani">
-          <label for="kaKullaniciAdi">Kullanıcı Adı</label>
-          <input id="kaKullaniciAdi" type="text" formControlName="kullaniciAdi" />
-        </div>
-        <div class="form-alani">
-          <label for="kaSifre">Parola</label>
-          <input id="kaSifre" type="password" formControlName="sifre" />
-        </div>
-        <div class="form-alani">
-          <label for="kaAdSoyad">Ad Soyad</label>
-          <input id="kaAdSoyad" type="text" formControlName="adSoyad" />
-        </div>
-        <div class="form-alani">
-          <label for="kaRol">Rol</label>
-          <select id="kaRol" formControlName="rol">
-            <option value="FORMEN">FORMEN</option>
-            <option value="ISG_YONETICI">ISG_YONETICI</option>
-          </select>
-        </div>
-        @if (kullaniciForm.controls.rol.value === 'FORMEN') {
-        <div class="form-alani">
-          <label for="kaBolge">Bölge</label>
-          <select id="kaBolge" formControlName="bolgeId">
-            <option [value]="null">Seçiniz…</option>
-            @for (bolge of bolgeler(); track bolge.id) {
-            <option [value]="bolge.id">{{ bolge.bolgeAdi }}</option>
-            }
-          </select>
-        </div>
-        }
-
-        @if (kullaniciFormuMesaji(); as mesaj) {
-        <p class="form-mesaji" [class.hata]="mesaj.tur === 'hata'">{{ mesaj.metin }}</p>
-        }
-
-        <button type="submit" class="gonder-butonu" [disabled]="kullaniciFormuGonderiliyor()">
-          {{ kullaniciFormuGonderiliyor() ? 'Oluşturuluyor…' : 'Kullanıcı Oluştur' }}
-        </button>
-      </form>
-    </section>
-    }
-
     @if (hataMesaji(); as hata) {
     <p class="genel-hata">{{ hata }}</p>
+    }
+    @if (senkronMesaji(); as sm) {
+    <p class="bilgi">{{ sm }}</p>
     }
 
     @if (yukleniyor()) {
     <p class="yukleniyor">Veriler yükleniyor…</p>
     } @else {
+
+    <section class="kart">
+      <h2>Canlı Kamera Durumu</h2>
+      <app-kamera-durum-paneli [kameralar]="kameralar()" />
+    </section>
+
+    @if (raporOzet(); as rapor) {
+    <section class="kart">
+      <div class="liste-basligi">
+        <h2>Haftalık Rapor Özeti ({{ rapor.baslangic }} – {{ rapor.bitis }})</h2>
+        <button type="button" class="ikincil-buton" (click)="pdfIndir()" [disabled]="pdfIndiriliyor()">
+          PDF İndir
+        </button>
+      </div>
+      <div class="rapor-ozet">
+        <div><span>Toplam</span><strong>{{ rapor.toplamIhlal }}</strong></div>
+        <div><span>Aktif</span><strong>{{ rapor.aktif }}</strong></div>
+        <div><span>Çözüldü</span><strong>{{ rapor.cozuldu }}</strong></div>
+        <div><span>Hatalı tespit</span><strong>{{ rapor.hataliTespit }}</strong></div>
+      </div>
+      @if (rapor.riskliSaatler.length) {
+      <p class="risk-saat">
+        En riskli saatler:
+        @for (s of rapor.riskliSaatler.slice(0, 5); track s.saat; let last = $last) {
+          <strong>{{ ('0' + s.saat).slice(-2) }}:00 ({{ s.adet }})</strong>@if (!last) {, }
+        }
+      </p>
+      }
+    </section>
+    }
+
     <section class="kart">
       <h2>İhlal İstatistikleri</h2>
       <app-istatistik-grafik [istatistikler]="filtreliIstatistikler()" (tipSecildi)="grafiktenTipSecildi($event)" />
+    </section>
+
+    <section class="kart">
+      <h2>Model Kalitesi (False Positive)</h2>
+      <app-kalite-grafik [kalite]="kalite()" />
     </section>
 
     <section class="kart">
@@ -94,6 +92,29 @@
         </div>
       </div>
       <app-ihlal-listesi [ihlaller]="filtreliIhlaller()" (satirSecildi)="satirSecildi($event)" />
+    </section>
+
+    <section class="kart denetim-kart" [class.kapali]="!denetimGunluguAcik()">
+      <button
+        type="button"
+        class="denetim-toggle"
+        (click)="denetimGunlugunuAcKapat()"
+        [attr.aria-expanded]="denetimGunluguAcik()"
+      >
+        <span class="denetim-baslik-blok">
+          <span class="denetim-baslik">Denetim Günlüğü</span>
+          <span class="denetim-alt">Giriş, başarısız giriş, çözüm ve reddetme işlemleri</span>
+        </span>
+        <span class="denetim-sag">
+          <span class="denetim-adet">{{ loglar().length }} kayıt</span>
+          <span class="denetim-ok" aria-hidden="true">{{ denetimGunluguAcik() ? '▲' : '▼' }}</span>
+        </span>
+      </button>
+      @if (denetimGunluguAcik()) {
+      <div class="denetim-icerik">
+        <app-denetim-gunlugu [loglar]="loglar()" />
+      </div>
+      }
     </section>
     }
   </main>

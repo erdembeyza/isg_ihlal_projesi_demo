@@ -55,13 +55,26 @@
 }
 
 .ph-sol-ayirici {
-  width: 1px;
-  height: 32px;
-  background: var(--erdemir-border);
+  display: none;
+}
+
+/* ── Sağ: Butonlar + Profil + Tarih-Saat ── */
+.ph-sag {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
   flex-shrink: 0;
 }
 
-/* ── Markanın Hemen Yanı: Kullanıcı bilgisi ── */
+.ph-kullanici-blok {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+}
+
+/* ── Profil düğmesi (sağ üst) ── */
 .ph-kullanici {
   display: flex;
   align-items: center;
@@ -70,6 +83,21 @@
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font: inherit;
+  text-align: left;
+
+  &:hover {
+    border-color: #fecaca;
+    background: #fff5f5;
+    box-shadow: 0 2px 8px rgba(204, 51, 51, 0.08);
+  }
+
+  &[aria-expanded='true'] {
+    border-color: var(--erdemir-red);
+    background: #fff5f5;
+  }
 }
 
 .ph-avatar {
@@ -106,47 +134,10 @@
   white-space: nowrap;
 }
 
-/* ── En Sağ: Butonlar + Çıkış Yap + Tarih-Saat ── */
-.ph-sag {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.ph-cikis-blok {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.2rem;
-}
-
-.ph-cikis-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 1rem;
-  border: 1px solid var(--erdemir-red);
-  border-radius: var(--erdemir-radius);
-  background: var(--erdemir-white);
-  color: var(--erdemir-red);
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-
-  &:hover {
-    background: var(--erdemir-red);
-    color: #fff;
-    box-shadow: 0 2px 6px rgba(204, 51, 51, 0.3);
-
-    svg path {
-      fill: #fff;
-    }
-  }
+.ph-profil-ok {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-left: 0.15rem;
 }
 
 .ph-tarih-saat {
@@ -172,17 +163,15 @@
     gap: 0.6rem;
   }
 
-  .ph-sol-ayirici {
-    display: none;
-  }
-
-  .ph-kullanici {
-    order: 3;
-    width: 100%;
-  }
-
   .ph-sag {
-    order: 2;
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .ph-kullanici-blok {
+    align-items: flex-end;
     margin-left: auto;
   }
 }

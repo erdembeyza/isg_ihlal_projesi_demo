@@ -1,0 +1,68 @@
+@if (loglar().length === 0) {
+  <p class="bos">Henüz denetim kaydı yok.</p>
+} @else {
+  <div class="filtre-satiri" role="tablist" aria-label="İşlem tipi filtresi">
+    @for (secenek of filtreSecenekleri(); track secenek.tip) {
+      <button
+        type="button"
+        role="tab"
+        class="filtre-chip"
+        [class.aktif]="filtre() === secenek.tip"
+        [attr.aria-selected]="filtre() === secenek.tip"
+        (click)="filtreSec(secenek.tip)"
+      >
+        {{ secenek.etiket }}
+        <span class="chip-adet">{{ secenek.adet }}</span>
+      </button>
+    }
+  </div>
+
+  @if (filtreliLoglar().length === 0) {
+    <p class="bos">Bu filtrede kayıt yok.</p>
+  } @else {
+    <div class="tablo-sarmalayici">
+      <table>
+        <thead>
+          <tr>
+            <th class="sutun-zaman">Zaman</th>
+            <th class="sutun-kullanici">Kullanıcı</th>
+            <th class="sutun-islem">İşlem</th>
+            <th class="sutun-ihlal">İhlal</th>
+            <th class="sutun-detay">Detay</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of filtreliLoglar(); track log.id) {
+            <tr [class]="satirSinifi(log.islemTipi)">
+              <td class="sutun-zaman">
+                <time [attr.datetime]="log.islemZamani">
+                  {{ log.islemZamani | date: 'dd.MM.yyyy' }}
+                  <span class="saat">{{ log.islemZamani | date: 'HH:mm' }}</span>
+                </time>
+              </td>
+              <td class="sutun-kullanici">
+                <span class="ad">{{ log.adSoyad }}</span>
+                <span class="meta">@{{ log.kullaniciAdi }}</span>
+              </td>
+              <td class="sutun-islem">
+                <span class="tip-rozet {{ tipSinifi(log.islemTipi) }}">
+                  {{ tipEtiketi(log.islemTipi) }}
+                </span>
+              </td>
+              <td class="sutun-ihlal">
+                @if (log.ilgiliIhlalId) {
+                  <span class="ihlal-id">#{{ log.ilgiliIhlalId }}</span>
+                } @else {
+                  <span class="bos-hucre">—</span>
+                }
+              </td>
+              <td class="sutun-detay">
+                <span [class.bos-hucre]="!log.detay">{{ detayMetni(log.detay) }}</span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

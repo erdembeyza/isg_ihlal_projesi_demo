@@ -20,5 +20,9 @@ export const adminGuard: CanActivateFn = () => {
     return true;
   }
 
+  if (authService.isGoruntuleyici()) {
+    return router.createUrlTree(['/izleyici']);
+  }
+
   return router.createUrlTree(['/formen']);
 };

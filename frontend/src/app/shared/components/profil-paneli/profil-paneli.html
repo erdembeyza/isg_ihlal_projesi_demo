@@ -1,0 +1,115 @@
+@if (acik()) {
+  <div class="profil-arka" (click)="arkaPlanaTiklandi($event)" role="presentation">
+    <aside class="profil-cekmece" role="dialog" aria-label="Profil ve hesap ayarları">
+      <header class="profil-baslik">
+        <div class="profil-baslik-sol">
+          <div class="profil-avatar" aria-hidden="true">
+            {{ (profil()?.adSoyad || '?')[0].toUpperCase() }}
+          </div>
+          <div>
+            <h2>{{ profil()?.adSoyad || 'Profil' }}</h2>
+            <p>{{ profil() ? rolEtiketi(profil()!.rol) : '…' }}</p>
+          </div>
+        </div>
+        <button type="button" class="kapat-btn" (click)="kapat()" aria-label="Kapat">✕</button>
+      </header>
+
+      @if (mesaj(); as m) {
+        <p class="profil-mesaj" [class.hata]="m.tur === 'hata'">{{ m.metin }}</p>
+      }
+
+      <div class="profil-icerik">
+        @if (yukleniyor()) {
+          <p class="yukleniyor">Yükleniyor…</p>
+        } @else if (profil(); as p) {
+          <section class="profil-kart profil-ozet-kart">
+            <div class="profil-ozet-ust">
+              <div class="profil-ozet-avatar" aria-hidden="true">{{ p.adSoyad[0].toUpperCase() }}</div>
+              <div>
+                <h3>{{ p.adSoyad }}</h3>
+                <p class="profil-gorev">{{ p.gorev || rolEtiketi(p.rol) }}</p>
+                <div class="profil-etiketler">
+                  <span class="rol-badge">{{ rolEtiketi(p.rol) }}</span>
+                  @if (p.bolgeAdi) {
+                    <span class="bolge-badge">{{ p.bolgeAdi }}</span>
+                  } @else {
+                    <span class="bolge-badge">Tüm fabrika</span>
+                  }
+                  <span class="durum-etiketi" [class.pasif]="!p.aktifMi">
+                    {{ p.aktifMi ? 'Aktif hesap' : 'Pasif hesap' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="profil-kart">
+            <h3>Hesap Bilgileri</h3>
+            <dl class="bilgi-listesi">
+              <div><dt>Kullanıcı adı</dt><dd><code>{{ p.kullaniciAdi }}</code></dd></div>
+              <div><dt>Rol</dt><dd>{{ rolEtiketi(p.rol) }}</dd></div>
+              <div>
+                <dt>Bölge / kapsam</dt>
+                <dd>{{ p.bolgeAdi || 'Tüm fabrika' }}</dd>
+              </div>
+              <div>
+                <dt>Son giriş</dt>
+                <dd>
+                  @if (p.sonGirisZamani) {
+                    {{ p.sonGirisZamani | date: 'dd.MM.yyyy HH:mm' }}
+                  } @else {
+                    Henüz kayıt yok
+                  }
+                </dd>
+              </div>
+            </dl>
+          </section>
+
+          <section class="profil-kart">
+            <h3>İletişim</h3>
+            <dl class="bilgi-listesi">
+              <div><dt>E-posta</dt><dd>{{ p.eposta || '—' }}</dd></div>
+              <div><dt>Telefon</dt><dd>{{ p.telefon || '—' }}</dd></div>
+            </dl>
+          </section>
+
+          <section class="profil-kart">
+            <h3>Ad Soyad Güncelle</h3>
+            <form [formGroup]="profilForm" (ngSubmit)="profilKaydet()" class="profil-form">
+              <label for="ppAdSoyad">Ad Soyad</label>
+              <input id="ppAdSoyad" type="text" formControlName="adSoyad" />
+              <button type="submit" class="birincil-btn" [disabled]="kaydediliyor()">
+                {{ kaydediliyor() ? 'Kaydediliyor…' : 'Kaydet' }}
+              </button>
+            </form>
+          </section>
+
+          <section class="profil-kart">
+            <h3>Parola Değiştir</h3>
+            <form [formGroup]="sifreForm" (ngSubmit)="sifreDegistir()" class="profil-form">
+              <label for="ppMevcutSifre">Mevcut parola</label>
+              <input id="ppMevcutSifre" type="password" formControlName="mevcutSifre" autocomplete="current-password" />
+              <label for="ppYeniSifre">Yeni parola</label>
+              <input id="ppYeniSifre" type="password" formControlName="yeniSifre" autocomplete="new-password" />
+              <label for="ppYeniSifreTekrar">Yeni parola (tekrar)</label>
+              <input id="ppYeniSifreTekrar" type="password" formControlName="yeniSifreTekrar" autocomplete="new-password" />
+              <button type="submit" class="birincil-btn" [disabled]="kaydediliyor()">
+                {{ kaydediliyor() ? 'Güncelleniyor…' : 'Parolayı Güncelle' }}
+              </button>
+            </form>
+          </section>
+        }
+      </div>
+
+      <footer class="profil-alt">
+        <button type="button" class="cikis-btn" (click)="cikisYap()">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path fill="currentColor"
+              d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+          </svg>
+          Çıkış Yap
+        </button>
+      </footer>
+    </aside>
+  </div>
+}

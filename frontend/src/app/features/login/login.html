@@ -55,10 +55,13 @@
         @if (form.controls.sifre.invalid && form.controls.sifre.touched) {
           <span class="alan-hatasi">Parola zorunludur.</span>
         }
+        @if (sifreHataMesaji()) {
+          <span class="alan-hatasi giris-hatasi">{{ sifreHataMesaji() }}</span>
+        }
       </div>
 
-      @if (hataMesaji()) {
-        <div class="genel-hata">{{ hataMesaji() }}</div>
+      @if (genelHataMesaji()) {
+        <div class="genel-hata">{{ genelHataMesaji() }}</div>
       }
 
       <div class="form-alt">

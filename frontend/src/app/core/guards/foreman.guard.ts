@@ -20,5 +20,9 @@ export const foremanGuard: CanActivateFn = () => {
     return true;
   }
 
+  if (authService.isGoruntuleyici()) {
+    return router.createUrlTree(['/izleyici']);
+  }
+
   return router.createUrlTree(['/yonetici']);
 };

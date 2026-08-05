@@ -24,6 +24,7 @@
               <span class="ok">{{ siralamaYonu() === 'asc' ? '▲' : '▼' }}</span>
             }
           </th>
+          <th>Açık süre</th>
           <th (click)="siralaAlaninaGore('tespitZamani')" class="siralanabilir">
             Tespit Zamanı
             @if (siralamaAlani() === 'tespitZamani') {
@@ -51,6 +52,7 @@
               }
             </td>
             <td>{{ ihlal.ihlalTipiAdi }}</td>
+            <td>{{ acikSure(ihlal) }}</td>
             <td>{{ ihlal.tespitZamani | date: 'dd.MM.yyyy HH:mm' }}</td>
             <td>
               <div class="durum-hucre">

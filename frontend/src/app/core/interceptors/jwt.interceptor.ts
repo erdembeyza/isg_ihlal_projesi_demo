@@ -21,7 +21,8 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(istek).pipe(
     catchError((hata: HttpErrorResponse) => {
-      if (hata.status === 401) {
+      const loginIstegi = req.url.includes('/auth/login');
+      if (hata.status === 401 && !loginIstegi) {
         authService.logout();
         router.navigate(['/']);
       }

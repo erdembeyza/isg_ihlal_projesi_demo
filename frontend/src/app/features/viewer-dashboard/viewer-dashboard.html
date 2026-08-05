@@ -1,0 +1,67 @@
+<app-panel-shell
+  panelAdi="Üst Yönetim İzleme Paneli"
+  [kullaniciAdi]="authService.currentUser()?.adSoyad || 'İzleyici'"
+  rolAdi="Görüntüleyici (salt okunur)"
+  (cikis)="cikisYap()"
+>
+  <button panelButonlari class="ikincil-buton" (click)="pdfIndir()" [disabled]="pdfIndiriliyor()">
+    {{ pdfIndiriliyor() ? 'PDF…' : 'Haftalık PDF' }}
+  </button>
+
+  <main class="panel-icerik">
+    @if (hataMesaji(); as hata) {
+    <p class="genel-hata">{{ hata }}</p>
+    }
+
+    @if (yukleniyor()) {
+    <p class="yukleniyor">Veriler yükleniyor…</p>
+    } @else {
+
+    <section class="kart">
+      <h2>Canlı Kamera Durumu</h2>
+      <app-kamera-durum-paneli [kameralar]="kameralar()" />
+    </section>
+
+    @if (raporOzet(); as rapor) {
+    <section class="kart">
+      <h2>Haftalık Rapor ({{ rapor.baslangic }} – {{ rapor.bitis }})</h2>
+      <div class="rapor-ozet">
+        <div><span>Toplam</span><strong>{{ rapor.toplamIhlal }}</strong></div>
+        <div><span>Aktif</span><strong>{{ rapor.aktif }}</strong></div>
+        <div><span>Çözüldü</span><strong>{{ rapor.cozuldu }}</strong></div>
+        <div><span>Hatalı</span><strong>{{ rapor.hataliTespit }}</strong></div>
+      </div>
+    </section>
+    }
+
+    <section class="kart">
+      <h2>İhlal İstatistikleri</h2>
+      <app-istatistik-grafik [istatistikler]="istatistikler()" (tipSecildi)="grafiktenTipSecildi($event)" />
+    </section>
+
+    <section class="kart">
+      <h2>Model Kalitesi</h2>
+      <app-kalite-grafik [kalite]="kalite()" />
+    </section>
+
+    <section class="kart">
+      <div class="liste-basligi">
+        <h2>İhlal Kayıtları ({{ filtreliIhlaller().length }})</h2>
+        <select [value]="secilenTip()" (change)="tipFiltresiDegisti($any($event.target).value)">
+          @for (tip of tipSecenekleri(); track tip) {
+          <option [value]="tip">{{ tip === TUMU ? 'Tüm Tipler' : tip }}</option>
+          }
+        </select>
+      </div>
+      <app-ihlal-listesi [ihlaller]="filtreliIhlaller()" (satirSecildi)="satirSecildi($event)" />
+    </section>
+
+    <section class="kart">
+      <h2>Denetim Günlüğü</h2>
+      <app-denetim-gunlugu [loglar]="loglar()" />
+    </section>
+    }
+  </main>
+</app-panel-shell>
+
+<app-ihlal-detay-modal [ihlal]="secilenIhlal()" [yetkiliMi]="false" (kapat)="modaliKapat()" />
