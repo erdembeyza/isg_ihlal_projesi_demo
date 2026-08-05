@@ -12,5 +12,9 @@ public interface PersonelRepository extends JpaRepository<Personel, Long> {
 
     Optional<Personel> findBySicilNo(String sicilNo);
 
+    Optional<Personel> findBySicilNoIgnoreCase(String sicilNo);
+
+    Optional<Personel> findByAdSoyadIgnoreCase(String adSoyad);
+
     List<Personel> findByBolgeId(Long bolgeId);
 }

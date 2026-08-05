@@ -81,6 +81,8 @@ class Ayarlar:
     stream_buffer_size: int
     stream_rtsp_tcp: bool
     kamera_adi: str = ""
+    reference_faces_klasoru: Path = Path("reference_faces")
+    yuz_tanima_esigi: float = 0.50
 
     @property
     def auth_login_url(self) -> str:
@@ -142,6 +144,10 @@ def ayarlari_yukle() -> Ayarlar:
         stream_buffer_size=max(1, _int_oku("STREAM_BUFFER_SIZE", 1)),
         stream_rtsp_tcp=_bool_oku("STREAM_RTSP_TCP", True),
         kamera_adi=os.getenv("KAMERA_ADI", "").strip(),
+        reference_faces_klasoru=_yol_coz(
+            os.getenv("REFERENCE_FACES_DIR", "reference_faces")
+        ),
+        yuz_tanima_esigi=_float_oku("YUZ_TANIMA_ESIGI", 0.50),
     )
 
 

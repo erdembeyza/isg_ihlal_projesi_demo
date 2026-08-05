@@ -46,17 +46,22 @@ class BackendIstemcisi:
         kare: np.ndarray,
         tespit_zamani: datetime | None = None,
         bolge_id: int | None = None,
+        personel_sicil_no: str | None = None,
     ) -> dict:
         """Bir ihlali backend'e POST eder; olusturulan IhlalResponseDTO'yu (dict) doner.
 
         bolge_id: coklu kamera modunda thread bazli bolge; verilmezse .env BOLGE_ID.
+        personel_sicil_no: yuz tanima motorunun belirledigi sicil no / kisi etiketi.
         """
-        istek_govdesi = {
+        istek_govdesi: dict = {
             "bolgeId": self._ayarlar.bolge_id if bolge_id is None else bolge_id,
             "ihlalTipiId": self._ayarlar.ihlal_tipi_id(ihlal_tipi_adi),
             "tespitZamani": (tespit_zamani or datetime.now()).isoformat(timespec="seconds"),
             "orijinalFotoBase64": kareyi_base64_jpeg_yap(kare),
         }
+        # Yuz tanima sonucu varsa personelSicilNo olarak ekle
+        if personel_sicil_no and personel_sicil_no != "Bilinmeyen":
+            istek_govdesi["personelSicilNo"] = personel_sicil_no
 
         for deneme in (1, 2):
             try:

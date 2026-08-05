@@ -282,8 +282,18 @@ public class IhlalService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personel bulunamadi: " + personelId));
         }
         if (sicilNo != null && !sicilNo.isBlank()) {
-            return personelRepository.findBySicilNo(sicilNo.trim())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Personel bulunamadi (sicil): " + sicilNo));
+            String aramaNo = sicilNo.trim();
+            java.util.Optional<Personel> bulunan = personelRepository.findBySicilNoIgnoreCase(aramaNo);
+            if (bulunan.isEmpty()) {
+                // Yuz tanima etiketindeki alt cizgileri bosluga cevirip ad_soyad ile de dene (orn: "Beyza_Erdem" -> "Beyza Erdem")
+                bulunan = personelRepository.findByAdSoyadIgnoreCase(aramaNo.replace("_", " "));
+            }
+            if (bulunan.isEmpty()) {
+                org.slf4j.LoggerFactory.getLogger(IhlalService.class)
+                        .warn("Yuz tanima sicil no veya ad soyad ile eslesmedi, personel atanmadi: '{}'", aramaNo);
+                return null;
+            }
+            return bulunan.get();
         }
         return null;
     }

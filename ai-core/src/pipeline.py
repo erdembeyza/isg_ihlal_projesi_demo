@@ -147,9 +147,10 @@ class IhlalPipeline:
         if self._kuru_calistirma:
             self._bildirim_sayaci += 1
             logger.info(
-                "[KURU CALISTIRMA] Ihlal: tip=%s guven=%.2f kutu=%s (backend'e GONDERILMEDI)",
+                "[KURU CALISTIRMA] Ihlal: tip=%s guven=%.2f kisi=%s kutu=%s (backend'e GONDERILMEDI)",
                 ihlal.ihlal_tipi_adi,
                 ihlal.guven,
+                ihlal.kisi_adi,
                 ihlal.kisi_kutusu,
             )
             if self._debug_cikti_klasoru is not None:
@@ -162,13 +163,15 @@ class IhlalPipeline:
                 kare,
                 tespit_zamani,
                 bolge_id=self._ayarlar.bolge_id,
+                personel_sicil_no=ihlal.kisi_adi if ihlal.kisi_adi != "Bilinmeyen" else None,
             )
             self._bildirim_sayaci += 1
             logger.info(
-                "Ihlal backend'e bildirildi: id=%s tip=%s guven=%.2f bolge_id=%s",
+                "Ihlal backend'e bildirildi: id=%s tip=%s guven=%.2f kisi=%s bolge_id=%s",
                 sonuc.get("id"),
                 ihlal.ihlal_tipi_adi,
                 ihlal.guven,
+                ihlal.kisi_adi,
                 self._ayarlar.bolge_id,
             )
         except Exception:
@@ -184,7 +187,8 @@ class IhlalPipeline:
         for ihlal in ihlaller:
             x1, y1, x2, y2 = ihlal.kisi_kutusu
             cv2.rectangle(gosterilecek, (x1, y1), (x2, y2), (0, 0, 255), 2)
-            etiket = f"{ihlal.ihlal_tipi_adi} {ihlal.guven:.2f}"
+            ad_kismi = f" | {ihlal.kisi_adi}" if ihlal.kisi_adi != "Bilinmeyen" else ""
+            etiket = f"{ihlal.ihlal_tipi_adi} {ihlal.guven:.2f}{ad_kismi}"
             cv2.putText(
                 gosterilecek, etiket, (x1, max(0, y1 - 8)),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2,
