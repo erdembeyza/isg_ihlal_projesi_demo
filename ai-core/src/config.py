@@ -81,8 +81,8 @@ class Ayarlar:
     stream_buffer_size: int
     stream_rtsp_tcp: bool
     kamera_adi: str = ""
-    reference_faces_klasoru: Path = Path("reference_faces")
-    yuz_tanima_esigi: float = 0.50
+    ihlal_min_sure_saniye: float = 8.0
+    heartbeat_saniye: float = 5.0
 
     @property
     def auth_login_url(self) -> str:
@@ -91,6 +91,10 @@ class Ayarlar:
     @property
     def ihlal_kayit_url(self) -> str:
         return f"{self.backend_base_url.rstrip('/')}/api/ihlaller"
+
+    @property
+    def kamera_heartbeat_url(self) -> str:
+        return f"{self.backend_base_url.rstrip('/')}/api/kameralar/heartbeat"
 
     def ihlal_tipi_id(self, ihlal_tipi_adi: str) -> int:
         eslestirme = {
@@ -138,16 +142,14 @@ def ayarlari_yukle() -> Ayarlar:
         ihlal_tipi_id_yelek=_int_oku("IHLAL_TIPI_ID_YELEK", 2),
         ihlal_tipi_id_gozluk=_int_oku("IHLAL_TIPI_ID_GOZLUK", 3),
         detection_cooldown_saniye=_float_oku("DETECTION_COOLDOWN_SANIYE", 30.0),
-        frame_atlama=max(1, _int_oku("FRAME_ATLAMA", 2)),
+        frame_atlama=max(1, _int_oku("FRAME_ATLAMA", 1)),
         stream_yeniden_baglan_saniye=max(1.0, _float_oku("STREAM_YENIDEN_BAGLAN_SANIYE", 5.0)),
         stream_max_yeniden_baglanma=_int_oku("STREAM_MAX_YENIDEN_BAGLANMA", -1),
         stream_buffer_size=max(1, _int_oku("STREAM_BUFFER_SIZE", 1)),
         stream_rtsp_tcp=_bool_oku("STREAM_RTSP_TCP", True),
         kamera_adi=os.getenv("KAMERA_ADI", "").strip(),
-        reference_faces_klasoru=_yol_coz(
-            os.getenv("REFERENCE_FACES_DIR", "reference_faces")
-        ),
-        yuz_tanima_esigi=_float_oku("YUZ_TANIMA_ESIGI", 0.50),
+        ihlal_min_sure_saniye=max(1.0, _float_oku("IHLAL_MIN_SURE_SANIYE", 8.0)),
+        heartbeat_saniye=max(2.0, _float_oku("HEARTBEAT_SANIYE", 5.0)),
     )
 
 

@@ -1,6 +1,7 @@
 """
 MODUL-1 (tasarim_mimari.md) istemci tarafi: tespit edilen bir ihlali
 IhlalKayitRequestDTO seklinde Java backend'ine (POST /api/ihlaller) gonderir.
+Ayrica kamera heartbeat (POST /api/kameralar/heartbeat) yollar.
 """
 from __future__ import annotations
 
@@ -17,8 +18,6 @@ from .config import Ayarlar
 
 logger = logging.getLogger(__name__)
 
-# JPEG kalitesi: kanit fotograflarinin okunabilirligi ile base64 govde
-# boyutu (agdaki gecikme) arasinda makul bir denge.
 JPEG_KALITE = 85
 
 
@@ -46,22 +45,17 @@ class BackendIstemcisi:
         kare: np.ndarray,
         tespit_zamani: datetime | None = None,
         bolge_id: int | None = None,
-        personel_sicil_no: str | None = None,
+        sure_saniye: int | None = None,
     ) -> dict:
-        """Bir ihlali backend'e POST eder; olusturulan IhlalResponseDTO'yu (dict) doner.
-
-        bolge_id: coklu kamera modunda thread bazli bolge; verilmezse .env BOLGE_ID.
-        personel_sicil_no: yuz tanima motorunun belirledigi sicil no / kisi etiketi.
-        """
+        """Bir ihlali backend'e POST eder; olusturulan IhlalResponseDTO'yu (dict) doner."""
         istek_govdesi: dict = {
             "bolgeId": self._ayarlar.bolge_id if bolge_id is None else bolge_id,
             "ihlalTipiId": self._ayarlar.ihlal_tipi_id(ihlal_tipi_adi),
             "tespitZamani": (tespit_zamani or datetime.now()).isoformat(timespec="seconds"),
             "orijinalFotoBase64": kareyi_base64_jpeg_yap(kare),
         }
-        # Yuz tanima sonucu varsa personelSicilNo olarak ekle
-        if personel_sicil_no and personel_sicil_no != "Bilinmeyen":
-            istek_govdesi["personelSicilNo"] = personel_sicil_no
+        if sure_saniye is not None:
+            istek_govdesi["sureSaniye"] = sure_saniye
 
         for deneme in (1, 2):
             try:
@@ -89,3 +83,35 @@ class BackendIstemcisi:
                 logger.warning("Ihlal bildirimi basarisiz oldu, tekrar denenecek: %s", exc)
 
         raise IhlalBildirimHatasi("Ihlal backend'e bildirilemedi (beklenmeyen akis)")
+
+    def kamera_heartbeat(
+        self,
+        *,
+        bolge_id: int,
+        kamera_adi: str,
+        fps: float | None = None,
+        son_kare_zamani: datetime | None = None,
+    ) -> None:
+        govde = {
+            "bolgeId": bolge_id,
+            "kameraAdi": kamera_adi,
+            "fps": fps,
+            "sonKareZamani": (son_kare_zamani or datetime.now()).isoformat(timespec="seconds"),
+        }
+        for deneme in (1, 2):
+            try:
+                yanit = requests.post(
+                    self._ayarlar.kamera_heartbeat_url,
+                    json=govde,
+                    headers=self._oturum.yetkili_baslik(),
+                    timeout=8,
+                )
+                if yanit.status_code == 401 and deneme == 1:
+                    self._oturum.token_al(zorla_yenile=True)
+                    continue
+                yanit.raise_for_status()
+                return
+            except requests.RequestException as exc:
+                if deneme == 2:
+                    logger.debug("Heartbeat basarisiz: %s", exc)
+                    return

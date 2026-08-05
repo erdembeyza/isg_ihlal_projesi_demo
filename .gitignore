@@ -31,7 +31,6 @@ ai-core/src/__pycache__/
 ai-core/*.pyc
 ai-core/*.pt
 ai-core/models/*.pt
-ai-core/reference_faces/
 
 # Test videolari, kamera ekran goruntuleri, debug kanit fotograflari
 ai-core/test_videos/*

@@ -21,13 +21,12 @@ baslangicta acikca loglanir (bkz. README.md "PPE modeli" bolumu).
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 from ultralytics import YOLO
 
 from .config import Ayarlar
-from .face_recognizer import YuzTaniyici
 
 logger = logging.getLogger(__name__)
 
@@ -55,18 +54,11 @@ class Ihlal:
     ihlal_tipi_adi: str
     guven: float
     kisi_kutusu: tuple[int, int, int, int]  # x1, y1, x2, y2
-    kisi_adi: str = "Bilinmeyen"  # Yüz tanıma sonucu
 
 
 class PpeDedektoru:
     def __init__(self, ayarlar: Ayarlar):
         self._ayarlar = ayarlar
-
-        # --- Yüz Tanıma Motoru (Multi-Shot) ---
-        self._yuz_taniyici = YuzTaniyici(
-            reference_faces_klasoru=ayarlar.reference_faces_klasoru,
-            esik=ayarlar.yuz_tanima_esigi,
-        )
 
         if ayarlar.yolo_model_yolu.exists():
             logger.info("PPE modeli yukleniyor: %s", ayarlar.yolo_model_yolu)
@@ -98,8 +90,7 @@ class PpeDedektoru:
         return self._demo_modu
 
     def tespit_et(self, kare: np.ndarray) -> list[Ihlal]:
-        """Karedeki KDD ihlallerini dondurur; her ihlalin kisi_adi alanini yuz
-        tanima motoruyla doldurur."""
+        """Karedeki KDD ihlallerini dondurur."""
         sonuclar = self._model.predict(
             kare, conf=self._ayarlar.guven_esigi, verbose=False
         )
@@ -119,11 +110,8 @@ class PpeDedektoru:
             etiketli_kutular.append((sinif_adi, guven, (x1, y1, x2, y2)))
 
         if self._demo_modu:
-            ihlaller = self._demo_ihlalleri_uret(etiketli_kutular)
-        else:
-            ihlaller = self._gercek_ihlalleri_uret(etiketli_kutular)
-
-        return self._ihlallere_yuz_tani(kare, ihlaller)
+            return self._demo_ihlalleri_uret(etiketli_kutular)
+        return self._gercek_ihlalleri_uret(etiketli_kutular)
 
     def _gercek_ihlalleri_uret(self, etiketli_kutular) -> list[Ihlal]:
         kisiler = [kb for kb in etiketli_kutular if kb[0] in KISI_SINIF_ISIMLERI]
@@ -146,41 +134,6 @@ class PpeDedektoru:
             for ihlal_tipi in TUM_IHLAL_TIPLERI:
                 ihlaller.append(Ihlal(ihlal_tipi, guven, kutu))
         return ihlaller
-
-    def _ihlallere_yuz_tani(self, kare: np.ndarray, ihlaller: list[Ihlal]) -> list[Ihlal]:
-        """Her ihlalin kisi kutusunu crop edip YuzTaniyici ile tanimlar;
-        Ihlal nesnelerini kisi_adi alanıyla yeniden olusturur."""
-        if not self._yuz_taniyici.hazir_mi or not ihlaller:
-            return ihlaller
-
-        yukseklik, genislik = kare.shape[:2]
-        zenginlestirilmis: list[Ihlal] = []
-
-        for ihlal in ihlaller:
-            x1, y1, x2, y2 = ihlal.kisi_kutusu
-            # Kare sınırlarını aşmayacak şekilde crop al
-            x1c = max(0, x1)
-            y1c = max(0, y1)
-            x2c = min(genislik, x2)
-            y2c = min(yukseklik, y2)
-
-            if x2c > x1c and y2c > y1c:
-                bolge = kare[y1c:y2c, x1c:x2c]
-                kisi_adi = self._yuz_taniyici.tani(bolge)
-            else:
-                kisi_adi = "Bilinmeyen"
-
-            # frozen dataclass: replace() yerine yeni nesne oluştur
-            zenginlestirilmis.append(
-                Ihlal(
-                    ihlal_tipi_adi=ihlal.ihlal_tipi_adi,
-                    guven=ihlal.guven,
-                    kisi_kutusu=ihlal.kisi_kutusu,
-                    kisi_adi=kisi_adi,
-                )
-            )
-
-        return zenginlestirilmis
 
 
 def _en_yakin_kisi_kutusu(hedef_kutu, kisi_kutulari):
