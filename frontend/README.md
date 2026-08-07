@@ -44,6 +44,7 @@ src/app/
 |---|---|---|
 | `admin` | `Admin123!` | ISG_YONETICI |
 | `formen1` | `Formen123!` | FORMEN |
+| `izleyici` | `Izleyici123!` | GORUNTULEYICI |
 
 `ai_core_servis` hesabı panel girişi için kullanılamaz (yalnızca AI Core API).
 

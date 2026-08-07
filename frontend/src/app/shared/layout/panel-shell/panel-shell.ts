@@ -4,12 +4,11 @@ import { AuthService } from '../../../core/services/auth.service';
 import { rolEtiketi } from '../../../core/models/auth.model';
 import { KullaniciYonetimSayfasiComponent } from '../../components/kullanici-yonetim-sayfasi/kullanici-yonetim-sayfasi';
 import { ProfilPaneliComponent } from '../../components/profil-paneli/profil-paneli';
-import { ExtranetFooter } from '../extranet-footer/extranet-footer';
 
 @Component({
   selector: 'app-panel-shell',
   standalone: true,
-  imports: [ExtranetFooter, ProfilPaneliComponent, KullaniciYonetimSayfasiComponent],
+  imports: [ProfilPaneliComponent, KullaniciYonetimSayfasiComponent],
   templateUrl: './panel-shell.html',
   styleUrl: './panel-shell.scss',
 })

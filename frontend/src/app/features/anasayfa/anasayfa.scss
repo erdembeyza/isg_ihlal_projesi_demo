@@ -20,7 +20,7 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(var(--extranet-footer-h, 78px) + 0.75rem);
+  bottom: calc(var(--extranet-footer-h, 40px) + 0.75rem);
   z-index: 50;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));

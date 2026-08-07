@@ -52,6 +52,7 @@ Panel: `http://localhost:4200`
 |---|---|---|
 | `admin` | `Admin123!` | ISG_YONETICI (tüm fabrika) |
 | `formen1` | `Formen123!` | FORMEN (kendi bölgesi) |
+| `izleyici` | `Izleyici123!` | GORUNTULEYICI (salt okunur) |
 
 > Yalnızca geliştirme/test içindir; üretimde değiştirilmelidir.
 
