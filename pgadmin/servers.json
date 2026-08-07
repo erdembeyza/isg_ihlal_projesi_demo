@@ -1,0 +1,14 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "ISG Postgres",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "isg_ihlal_db",
+      "Username": "isg_admin",
+      "PassFile": "/var/lib/pgadmin/pgpass",
+      "SSLMode": "prefer"
+    }
+  }
+}
