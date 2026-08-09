@@ -8,6 +8,7 @@ kanit karesini backend'e bildirir. Periyodik kamera heartbeat gonderir.
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -19,11 +20,13 @@ from .backend_client import BackendIstemcisi
 from .config import Ayarlar
 from .ppe_detector import Ihlal, PpeDedektoru
 from .stream import akisi_surdur, canli_akismi
-from .tracker import IoUTracker
+from .tracker import IoUTracker, kutu_iou
 
 logger = logging.getLogger(__name__)
 
 GOSTERIM_PENCERE_ADI = "ISG Ihlal Tespiti - AI Core"
+# OpenCV GUI cagrilari (imshow/waitKey) Windows'ta thread-safe degil.
+_OPENCV_GUI_KILIDI = threading.Lock()
 
 
 def _ekran_boyutu() -> tuple[int, int]:
@@ -73,6 +76,13 @@ class IhlalPipeline:
         self._durdur = False
         self._tracker = IoUTracker(
             min_sure_saniye=ayarlar.ihlal_min_sure_saniye,
+            yeniden_bildirim_saniye=ayarlar.detection_cooldown_saniye,
+        )
+        logger.info(
+            "[%s] Kayit esikleri: min_sure=%.0fs, tekrar_kayit_cooldown=%.0fs",
+            ayarlar.kamera_adi or f"bolge-{ayarlar.bolge_id}",
+            ayarlar.ihlal_min_sure_saniye,
+            ayarlar.detection_cooldown_saniye,
         )
         self._son_kare_zamani: float | None = None
         self._son_islem_zamani: float | None = None
@@ -118,7 +128,12 @@ class IhlalPipeline:
             logger.info("[%s] Pipeline kullanici tarafindan durduruldu (Ctrl+C).", etiket)
         finally:
             if self._goster:
-                cv2.destroyAllWindows()
+                # destroyAllWindows diger kameranin penceresini de kapatir.
+                with _OPENCV_GUI_KILIDI:
+                    try:
+                        cv2.destroyWindow(self._gosterim_pencere_adi())
+                    except cv2.error:
+                        pass
 
     def _kareyi_isle(self, kare: np.ndarray) -> bool:
         if self._durdur:
@@ -142,19 +157,20 @@ class IhlalPipeline:
             bildirilecekler = self._tracker.devam_et(dt, simdi)
 
         for bildirim in bildirilecekler:
-            ihlal = Ihlal(
-                ihlal_tipi_adi=bildirim.ihlal_tipi_adi,
-                guven=bildirim.guven,
-                kisi_kutusu=bildirim.kisi_kutusu,
-            )
+            # Tracker kutusu eski kareden kalabilir; kanit icin bu karede yeniden hizala.
+            ihlal = self._kanit_icin_ihlal_hizala(kare, bildirim, ihlaller)
             self._ihlali_bildir(kare, ihlal, bildirim.sure_saniye)
 
         if self._goster:
-            self._kareyi_ciz_ve_goster(kare, ihlaller)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                logger.info("Kullanici 'q' ile cikisi tetikledi.")
-                self._durdur = True
-                return False
+            with _OPENCV_GUI_KILIDI:
+                self._kareyi_ciz_ve_goster(kare, ihlaller)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    logger.info(
+                        "[%s] Kullanici 'q' ile cikisi tetikledi.",
+                        self._ayarlar.kamera_adi or f"bolge-{self._ayarlar.bolge_id}",
+                    )
+                    self._durdur = True
+                    return False
         return True
 
     def _fps_guncelle(self) -> None:
@@ -183,8 +199,46 @@ class IhlalPipeline:
         except Exception:
             logger.debug("Kamera heartbeat gonderilemedi", exc_info=True)
 
+    def _kanit_icin_ihlal_hizala(
+        self,
+        kare: np.ndarray,
+        bildirim,
+        anlik_ihlaller: list[Ihlal],
+    ) -> Ihlal:
+        """
+        Kayit karesindeki guncel YOLO kutusuyla hizalar.
+        Boylece dikdortgen, fotodaki baret/yelek ihlalinin uzerinde olur.
+        """
+        adaylar = [
+            i for i in anlik_ihlaller if i.ihlal_tipi_adi == bildirim.ihlal_tipi_adi
+        ]
+        if not adaylar:
+            # Sure esigi YOLO atlana karede dolmus olabilir — bu karede tekrar tespit.
+            adaylar = [
+                i
+                for i in self._dedektor.tespit_et(kare)
+                if i.ihlal_tipi_adi == bildirim.ihlal_tipi_adi
+            ]
+
+        if adaylar:
+            en_iyi = max(
+                adaylar,
+                key=lambda i: kutu_iou(bildirim.kisi_kutusu, i.kisi_kutusu),
+            )
+            return en_iyi
+
+        # Son care: tracker kutusu (kaymis olabilir)
+        return Ihlal(
+            ihlal_tipi_adi=bildirim.ihlal_tipi_adi,
+            guven=bildirim.guven,
+            kisi_kutusu=bildirim.kisi_kutusu,
+            cizim_kutusu=bildirim.kisi_kutusu,
+        )
+
     def _ihlali_bildir(self, kare: np.ndarray, ihlal: Ihlal, sure_saniye: int) -> None:
         tespit_zamani = datetime.now()
+        # Paneldeki kanit fotosi --show ile ayni: ihlal bolgesi dikdortgen + etiket.
+        kanit_kare = self._ihlal_kutusunu_ciz(kare, ihlal)
 
         if self._kuru_calistirma:
             self._bildirim_sayaci += 1
@@ -194,47 +248,62 @@ class IhlalPipeline:
                 ihlal.ihlal_tipi_adi,
                 ihlal.guven,
                 sure_saniye,
-                ihlal.kisi_kutusu,
+                ihlal.kutu_cizim_icin(),
             )
             if self._debug_cikti_klasoru is not None:
-                self._debug_ciktisini_kaydet(kare, ihlal, tespit_zamani)
+                self._debug_ciktisini_kaydet(kanit_kare, ihlal, tespit_zamani)
             return
 
         try:
             sonuc = self._backend.ihlal_bildir(  # type: ignore[union-attr]
                 ihlal.ihlal_tipi_adi,
-                kare,
+                kanit_kare,
                 tespit_zamani,
                 bolge_id=self._ayarlar.bolge_id,
                 sure_saniye=sure_saniye,
             )
             self._bildirim_sayaci += 1
             logger.info(
-                "Ihlal backend'e bildirildi: id=%s tip=%s guven=%.2f sure=%ss bolge_id=%s",
+                "Ihlal backend'e bildirildi: id=%s tip=%s guven=%.2f sure=%ss "
+                "bolge_id=%s bolge_kaynak=%s kamera=%s",
                 sonuc.get("id"),
                 ihlal.ihlal_tipi_adi,
                 ihlal.guven,
                 sure_saniye,
                 self._ayarlar.bolge_id,
+                self._ayarlar.video_kaynagi,
+                self._ayarlar.kamera_adi or "-",
             )
         except Exception:
-            logger.exception("Ihlal bildirimi basarisiz oldu, bu tespit atlaniyor.")
+            logger.exception(
+                "Ihlal bildirimi basarisiz oldu (kamera=%s), bu tespit atlaniyor.",
+                self._ayarlar.kamera_adi or "-",
+            )
 
     def _debug_ciktisini_kaydet(self, kare, ihlal: Ihlal, zaman: datetime) -> None:
         self._debug_cikti_klasoru.mkdir(parents=True, exist_ok=True)
         damga = zaman.strftime("%Y%m%d_%H%M%S_%f")
         cv2.imwrite(str(self._debug_cikti_klasoru / f"{damga}_{ihlal.ihlal_tipi_adi}.jpg"), kare)
 
+    @staticmethod
+    def _ihlal_kutusunu_ciz(
+        kare: np.ndarray, ihlal: Ihlal, *, kopyala: bool = True
+    ) -> np.ndarray:
+        """--show ile ayni stil: kirmizi dikdortgen (PPE/ihlal bolgesi) + etiket."""
+        cizili = kare.copy() if kopyala else kare
+        x1, y1, x2, y2 = ihlal.kutu_cizim_icin()
+        cv2.rectangle(cizili, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        etiket = f"{ihlal.ihlal_tipi_adi} {ihlal.guven:.2f}"
+        cv2.putText(
+            cizili, etiket, (x1, max(0, y1 - 8)),
+            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2,
+        )
+        return cizili
+
     def _kareyi_ciz_ve_goster(self, kare: np.ndarray, ihlaller: list[Ihlal]) -> None:
         gosterilecek = kare.copy()
         for ihlal in ihlaller:
-            x1, y1, x2, y2 = ihlal.kisi_kutusu
-            cv2.rectangle(gosterilecek, (x1, y1), (x2, y2), (0, 0, 255), 2)
-            etiket = f"{ihlal.ihlal_tipi_adi} {ihlal.guven:.2f}"
-            cv2.putText(
-                gosterilecek, etiket, (x1, max(0, y1 - 8)),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2,
-            )
+            self._ihlal_kutusunu_ciz(gosterilecek, ihlal, kopyala=False)
 
         gosterilecek = _ekrana_sigdir(
             gosterilecek, self._gosterim_max_genislik, self._gosterim_max_yukseklik

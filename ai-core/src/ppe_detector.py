@@ -21,6 +21,7 @@ baslangicta acikca loglanir (bkz. README.md "PPE modeli" bolumu).
 from __future__ import annotations
 
 import logging
+import threading
 from dataclasses import dataclass
 
 import numpy as np
@@ -53,12 +54,21 @@ KISI_SINIF_ISIMLERI = frozenset({"person", "Person"})
 class Ihlal:
     ihlal_tipi_adi: str
     guven: float
-    kisi_kutusu: tuple[int, int, int, int]  # x1, y1, x2, y2
+    kisi_kutusu: tuple[int, int, int, int]  # x1,y1,x2,y2 — takip / kisi
+    # PPE sinif kutusu (NO-Hardhat vb.); yoksa kisi_kutusu kullanilir.
+    cizim_kutusu: tuple[int, int, int, int] | None = None
+
+    def kutu_cizim_icin(self) -> tuple[int, int, int, int]:
+        """Kanit fotosi ve --show icin: ihlalin oldugu bolge kutusu."""
+        return self.cizim_kutusu or self.kisi_kutusu
 
 
 class PpeDedektoru:
     def __init__(self, ayarlar: Ayarlar):
         self._ayarlar = ayarlar
+        # Coklu kamera thread'leri ayni modeli paylasir; ultralytics predict
+        # eszamanli cagrida guvenli degil (B kamerasi sessizce bos/hatali donebilir).
+        self._inferans_kilidi = threading.Lock()
 
         if ayarlar.yolo_model_yolu.exists():
             logger.info("PPE modeli yukleniyor: %s", ayarlar.yolo_model_yolu)
@@ -91,9 +101,10 @@ class PpeDedektoru:
 
     def tespit_et(self, kare: np.ndarray) -> list[Ihlal]:
         """Karedeki KDD ihlallerini dondurur."""
-        sonuclar = self._model.predict(
-            kare, conf=self._ayarlar.guven_esigi, verbose=False
-        )
+        with self._inferans_kilidi:
+            sonuclar = self._model.predict(
+                kare, conf=self._ayarlar.guven_esigi, verbose=False
+            )
         if not sonuclar:
             return []
 
@@ -120,8 +131,9 @@ class PpeDedektoru:
             ihlal_tipi = SINIF_TO_IHLAL_TIPI.get(sinif_adi)
             if ihlal_tipi is None:
                 continue
+            # Takip kisi kutusuyla; cizim dogrudan PPE (baret/yelek) kutusuyla.
             kisi_kutusu = _en_yakin_kisi_kutusu(kutu, kisiler) or kutu
-            ihlaller.append(Ihlal(ihlal_tipi, guven, kisi_kutusu))
+            ihlaller.append(Ihlal(ihlal_tipi, guven, kisi_kutusu, cizim_kutusu=kutu))
         return ihlaller
 
     def _demo_ihlalleri_uret(self, etiketli_kutular) -> list[Ihlal]:
@@ -132,7 +144,7 @@ class PpeDedektoru:
             if sinif_adi not in KISI_SINIF_ISIMLERI:
                 continue
             for ihlal_tipi in TUM_IHLAL_TIPLERI:
-                ihlaller.append(Ihlal(ihlal_tipi, guven, kutu))
+                ihlaller.append(Ihlal(ihlal_tipi, guven, kutu, cizim_kutusu=kutu))
         return ihlaller
 
 

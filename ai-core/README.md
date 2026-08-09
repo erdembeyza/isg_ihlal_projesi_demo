@@ -77,6 +77,24 @@ iPhone için benzer uygulama (ör. **IP Camera** / **EpocCam**) veya bilgisayara
 
 Her kayıt kendi `bolge_id` ile ayrı thread’de izlenir; panelde ihlaller ilgili bölge adıyla görünür.
 
+### Yüksek Fırın (A + B aynı anda)
+
+`cameras.yuksek-firin.json`: A ve B bölgesi kameraları video dosyasından **eş anda** döngüde oynar (canlı kamera gibi).
+
+```powershell
+# Repo kökünden (önerilen)
+.\scripts\start-yuksek-firin.ps1
+
+# veya ai-core içinden
+python -m src.main --cameras cameras.yuksek-firin.json --show
+```
+
+Videolar: `test_videos/a_bolgesi.mp4`, `test_videos/b_bolgesi.mp4`  
+Yoksa start script kısa placeholder üretir; kendi kayıtlarınızı aynı adlarla koyabilirsiniz.  
+Bölgeler: `Yüksek Fırın A Bolgesi` (`bolge_id=4` ← `a_bolgesi.mp4`),  
+`Yüksek Fırın B Bolgesi` (`bolge_id=5` ← `b_bolgesi.mp4`).  
+Yüksek Fırın formeni her iki bölgeye bağlı (migration `V16`); panelde Bölge sütununda A/B ayrı yazılır.
+
 ## Kamera yokken geliştirme (simulasyon)
 
 Yerel videoyu **döngüde** oynatmak = canlı kamera gibi davranır:

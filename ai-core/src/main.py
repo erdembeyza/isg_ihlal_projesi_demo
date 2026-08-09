@@ -12,6 +12,10 @@ Gercek RTSP guvenlik kamerasi:
 Coklu kamera:
     python -m src.main --cameras cameras.json
 
+Yuksek Firin A + B (video kayitlari, ayni anda):
+    python -m src.main --cameras cameras.yuksek-firin.json --show
+    # veya: .\\scripts\\start-yuksek-firin.ps1
+
 Dosya ile canli simulasyon:
     python -m src.main --source test_videos/demo2.mp4 --loop --show
 """
@@ -109,9 +113,9 @@ def _coklu_kamera_calistir(
     logger = logging.getLogger(__name__)
     logger.info("%s kamera baslatilacak: %s", len(kameralar), cameras_dosyasi)
 
-    # Model bir kez yuklenir (bellek); her thread ayni dedektoru kullanir.
-    # ultralytics predict cagrilari thread-safe kabul edilir (ayri inference).
-    dedektor = PpeDedektoru(temel_ayarlar)
+    # Backend oturumu ortak; YOLO modeli kamera basina ayri yuklenir.
+    # Paylasimli tek model + kilit, B kamerasinda tespit/sure birikimini bozuyordu
+    # (ekranda kutu gorunup ihlal kaydi hic dusmuyordu).
     backend = None if dry_run else BackendIstemcisi(temel_ayarlar)
 
     threadler: list[threading.Thread] = []
@@ -121,8 +125,9 @@ def _coklu_kamera_calistir(
             bolge_id=kamera.bolge_id,
             kamera_adi=kamera.ad,
         )
+        dedektor = PpeDedektoru(temel_ayarlar)
 
-        def _hedef(a=ayar) -> None:
+        def _hedef(a=ayar, d=dedektor) -> None:
             try:
                 _tek_kamera_calistir(
                     a,
@@ -131,7 +136,7 @@ def _coklu_kamera_calistir(
                     goster=goster,
                     debug_output=debug_output,
                     loop=loop or (not canli_akismi(a.video_kaynagi)),
-                    dedektor=dedektor,
+                    dedektor=d,
                     backend=backend,
                 )
             except Exception:

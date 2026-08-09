@@ -14,6 +14,7 @@ export interface LoginResponse {
   rol: Rol;
   adSoyad: string;
   bolgeId: number | null;
+  bolgeIds?: number[];
 }
 
 /** Backend: ProfilResponseDTO */
@@ -24,6 +25,7 @@ export interface Profil {
   rol: Rol;
   bolgeId: number | null;
   bolgeAdi: string | null;
+  bolgeIds?: number[];
   aktifMi: boolean;
   eposta: string | null;
   telefon: string | null;
