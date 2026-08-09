@@ -12,12 +12,6 @@
               <span class="ok">{{ siralamaYonu() === 'asc' ? '▲' : '▼' }}</span>
             }
           </th>
-          <th (click)="siralaAlaninaGore('personelAdi')" class="siralanabilir">
-            Personel / Sicil No
-            @if (siralamaAlani() === 'personelAdi') {
-              <span class="ok">{{ siralamaYonu() === 'asc' ? '▲' : '▼' }}</span>
-            }
-          </th>
           <th (click)="siralaAlaninaGore('ihlalTipiAdi')" class="siralanabilir">
             İhlal Tipi
             @if (siralamaAlani() === 'ihlalTipiAdi') {
@@ -41,16 +35,6 @@
               <img [appAuthImg]="ihlalService.fotoTamUrl(ihlal.fotoUrl)" alt="İhlal kanıtı küçük resmi" class="kucuk-resim" />
             </td>
             <td>{{ ihlal.bolgeAdi }}</td>
-            <td>
-              @if (ihlal.personelAdi) {
-                <div class="personel-hucre">
-                  <span class="personel-adi">{{ ihlal.personelAdi }}</span>
-                  <span class="sicil">{{ ihlal.personelSicilNo }}</span>
-                </div>
-              } @else {
-                <span class="atanmamis">—</span>
-              }
-            </td>
             <td>{{ ihlal.ihlalTipiAdi }}</td>
             <td>{{ acikSure(ihlal) }}</td>
             <td>{{ ihlal.tespitZamani | date: 'dd.MM.yyyy HH:mm' }}</td>

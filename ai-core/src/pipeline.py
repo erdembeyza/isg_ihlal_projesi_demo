@@ -18,7 +18,8 @@ import numpy as np
 
 from .backend_client import BackendIstemcisi
 from .config import Ayarlar
-from .ppe_detector import Ihlal, PpeDedektoru
+from .face_blur import yuzleri_blurla
+from .ppe_detector import Ihlal, PpeDedektoru, kisi_cizim_kutusunu_genislet
 from .stream import akisi_surdur, canli_akismi
 from .tracker import IoUTracker, kutu_iou
 
@@ -29,16 +30,22 @@ GOSTERIM_PENCERE_ADI = "ISG Ihlal Tespiti - AI Core"
 _OPENCV_GUI_KILIDI = threading.Lock()
 
 
-def _ekran_boyutu() -> tuple[int, int]:
+def ekran_boyutu() -> tuple[int, int]:
     try:
         import ctypes
 
         user32 = ctypes.windll.user32
-        genislik = max(640, int(user32.GetSystemMetrics(0) * 0.90))
-        yukseklik = max(480, int(user32.GetSystemMetrics(1) * 0.85))
+        genislik = max(640, int(user32.GetSystemMetrics(0)))
+        yukseklik = max(480, int(user32.GetSystemMetrics(1)))
         return genislik, yukseklik
     except Exception:
         return 1280, 720
+
+
+def _ekran_boyutu() -> tuple[int, int]:
+    """Geriye donuk; tek kamera gosteriminde biraz kenar payi birak."""
+    w, h = ekran_boyutu()
+    return max(640, int(w * 0.90)), max(480, int(h * 0.85))
 
 
 def _ekrana_sigdir(kare: np.ndarray, max_genislik: int, max_yukseklik: int) -> np.ndarray:
@@ -62,6 +69,8 @@ class IhlalPipeline:
         kuru_calistirma: bool = False,
         goster: bool = False,
         debug_cikti_klasoru: Path | None = None,
+        pencere_konum: tuple[int, int] | None = None,
+        pencere_max_boyut: tuple[int, int] | None = None,
     ):
         self._ayarlar = ayarlar
         self._dedektor = dedektor or PpeDedektoru(ayarlar)
@@ -69,10 +78,14 @@ class IhlalPipeline:
         self._kuru_calistirma = kuru_calistirma
         self._goster = goster
         self._debug_cikti_klasoru = debug_cikti_klasoru
+        self._pencere_konum = pencere_konum
         self._bildirim_sayaci = 0
         self._kare_no = 0
         self._gosterim_penceresi_hazir = False
-        self._gosterim_max_genislik, self._gosterim_max_yukseklik = _ekran_boyutu()
+        if pencere_max_boyut is not None:
+            self._gosterim_max_genislik, self._gosterim_max_yukseklik = pencere_max_boyut
+        else:
+            self._gosterim_max_genislik, self._gosterim_max_yukseklik = _ekran_boyutu()
         self._durdur = False
         self._tracker = IoUTracker(
             min_sure_saniye=ayarlar.ihlal_min_sure_saniye,
@@ -157,8 +170,14 @@ class IhlalPipeline:
             bildirilecekler = self._tracker.devam_et(dt, simdi)
 
         for bildirim in bildirilecekler:
-            # Tracker kutusu eski kareden kalabilir; kanit icin bu karede yeniden hizala.
             ihlal = self._kanit_icin_ihlal_hizala(kare, bildirim, ihlaller)
+            if ihlal is None:
+                logger.warning(
+                    "[%s] Ihlal atlandi: karede eslesen kisi kutusu yok (tip=%s)",
+                    self._ayarlar.kamera_adi or f"bolge-{self._ayarlar.bolge_id}",
+                    bildirim.ihlal_tipi_adi,
+                )
+                continue
             self._ihlali_bildir(kare, ihlal, bildirim.sure_saniye)
 
         if self._goster:
@@ -199,46 +218,90 @@ class IhlalPipeline:
         except Exception:
             logger.debug("Kamera heartbeat gonderilemedi", exc_info=True)
 
+    def _guncel_kisi_kutusu(
+        self,
+        kare: np.ndarray,
+        referans: tuple[int, int, int, int],
+        *,
+        min_iou: float = 0.08,
+    ) -> tuple[int, int, int, int] | None:
+        """Bu karedeki YOLO kisi kutularından referansa en cok ortuseni sec."""
+        kisiler = self._dedektor.kisi_kutularini_bul(kare)
+        if not kisiler:
+            return None
+        en_iyi = max(kisiler, key=lambda k: kutu_iou(referans, k))
+        if kutu_iou(referans, en_iyi) >= min_iou:
+            return en_iyi
+        # IoU dusukse merkez mesafesiyle dene (kisi hizli hareket etmis olabilir)
+        def merkez(k: tuple[int, int, int, int]) -> tuple[float, float]:
+            return (k[0] + k[2]) / 2.0, (k[1] + k[3]) / 2.0
+
+        rx, ry = merkez(referans)
+        en_yakin = min(
+            kisiler,
+            key=lambda k: (merkez(k)[0] - rx) ** 2 + (merkez(k)[1] - ry) ** 2,
+        )
+        ex, ey = merkez(en_yakin)
+        kosegen = max(
+            1.0,
+            ((en_yakin[2] - en_yakin[0]) ** 2 + (en_yakin[3] - en_yakin[1]) ** 2) ** 0.5,
+        )
+        if (((ex - rx) ** 2 + (ey - ry) ** 2) ** 0.5) / kosegen <= 0.6:
+            return en_yakin
+        return None
+
     def _kanit_icin_ihlal_hizala(
         self,
         kare: np.ndarray,
         bildirim,
         anlik_ihlaller: list[Ihlal],
-    ) -> Ihlal:
+    ) -> Ihlal | None:
         """
-        Kayit karesindeki guncel YOLO kutusuyla hizalar.
-        Boylece dikdortgen, fotodaki baret/yelek ihlalinin uzerinde olur.
+        Kirmizi cerceve icin bu karedeki GERCEK kisi kutusunu bulur.
+        Kisi yoksa None (yanlis nesne kutusuna asla cizilmez/kaydedilmez).
         """
+        guven = bildirim.guven
+        referans = bildirim.kisi_kutusu
+
+        # Ayni tip anlik ihlallerden kisi adayi (zaten kisiye bagli)
         adaylar = [
             i for i in anlik_ihlaller if i.ihlal_tipi_adi == bildirim.ihlal_tipi_adi
         ]
         if not adaylar:
-            # Sure esigi YOLO atlana karede dolmus olabilir — bu karede tekrar tespit.
             adaylar = [
                 i
                 for i in self._dedektor.tespit_et(kare)
                 if i.ihlal_tipi_adi == bildirim.ihlal_tipi_adi
             ]
-
         if adaylar:
-            en_iyi = max(
-                adaylar,
-                key=lambda i: kutu_iou(bildirim.kisi_kutusu, i.kisi_kutusu),
-            )
-            return en_iyi
+            en_iyi = max(adaylar, key=lambda i: kutu_iou(referans, i.kisi_kutusu))
+            referans = en_iyi.kisi_kutusu
+            guven = en_iyi.guven
 
-        # Son care: tracker kutusu (kaymis olabilir)
+        kisi = self._guncel_kisi_kutusu(kare, referans)
+        if kisi is None:
+            return None
+
         return Ihlal(
             ihlal_tipi_adi=bildirim.ihlal_tipi_adi,
-            guven=bildirim.guven,
-            kisi_kutusu=bildirim.kisi_kutusu,
-            cizim_kutusu=bildirim.kisi_kutusu,
+            guven=guven,
+            kisi_kutusu=kisi,
+            cizim_kutusu=kisi_cizim_kutusunu_genislet(
+                kisi, kare_boyutu=kare.shape[:2]
+            ),
         )
 
     def _ihlali_bildir(self, kare: np.ndarray, ihlal: Ihlal, sure_saniye: int) -> None:
         tespit_zamani = datetime.now()
-        # Paneldeki kanit fotosi --show ile ayni: ihlal bolgesi dikdortgen + etiket.
-        kanit_kare = self._ihlal_kutusunu_ciz(kare, ihlal)
+        # Yuz blur: yalnizca bu karedeki YOLO kisi kutulari.
+        kisi_kutulari = self._dedektor.kisi_kutularini_bul(kare)
+        if not kisi_kutulari:
+            kisi_kutulari = [ihlal.kisi_kutusu]
+        elif not any(kutu_iou(ihlal.kisi_kutusu, k) >= 0.08 for k in kisi_kutulari):
+            kisi_kutulari = [*kisi_kutulari, ihlal.kisi_kutusu]
+        kanit_kare = yuzleri_blurla(kare, kisi_kutulari)
+        # Kirmizi cerceve: ihlal sahibi kisinin guncel kutusu.
+        kanit_kare = self._ihlal_kutusunu_ciz(kanit_kare, ihlal)
 
         if self._kuru_calistirma:
             self._bildirim_sayaci += 1
@@ -286,12 +349,22 @@ class IhlalPipeline:
         cv2.imwrite(str(self._debug_cikti_klasoru / f"{damga}_{ihlal.ihlal_tipi_adi}.jpg"), kare)
 
     @staticmethod
+    def _cizim_koordinatlari(kare: np.ndarray, ihlal: Ihlal) -> tuple[int, int, int, int]:
+        """Kafa payi eklenmis cerceve; cizim_kutusu varsa onu (kare sinirinda) kullan."""
+        h, w = kare.shape[:2]
+        if ihlal.cizim_kutusu is not None:
+            x1, y1, x2, y2 = ihlal.cizim_kutusu
+            return max(0, x1), max(0, y1), min(w - 1, x2), min(h - 1, y2)
+        return kisi_cizim_kutusunu_genislet(ihlal.kisi_kutusu, kare_boyutu=(h, w))
+
+    @classmethod
     def _ihlal_kutusunu_ciz(
+        cls,
         kare: np.ndarray, ihlal: Ihlal, *, kopyala: bool = True
     ) -> np.ndarray:
-        """--show ile ayni stil: kirmizi dikdortgen (PPE/ihlal bolgesi) + etiket."""
+        """--show ile ayni stil: kirmizi dikdortgen (kafa dahil genisletilmis) + etiket."""
         cizili = kare.copy() if kopyala else kare
-        x1, y1, x2, y2 = ihlal.kutu_cizim_icin()
+        x1, y1, x2, y2 = cls._cizim_koordinatlari(cizili, ihlal)
         cv2.rectangle(cizili, (x1, y1), (x2, y2), (0, 0, 255), 2)
         etiket = f"{ihlal.ihlal_tipi_adi} {ihlal.guven:.2f}"
         cv2.putText(
@@ -300,11 +373,29 @@ class IhlalPipeline:
         )
         return cizili
 
-    def _kareyi_ciz_ve_goster(self, kare: np.ndarray, ihlaller: list[Ihlal]) -> None:
+    def _ihlal_karelerini_ciz(self, kare: np.ndarray, ihlaller: list[Ihlal]) -> np.ndarray:
+        """Ihlal kutularini kareye cizer (ayri pencere acmaz)."""
         gosterilecek = kare.copy()
+        cizilen: set[tuple[int, int, int, int]] = set()
         for ihlal in ihlaller:
+            if ihlal.kisi_kutusu in cizilen:
+                x1, y1, _, _ = self._cizim_koordinatlari(gosterilecek, ihlal)
+                cv2.putText(
+                    gosterilecek,
+                    f"{ihlal.ihlal_tipi_adi} {ihlal.guven:.2f}",
+                    (x1, max(0, y1 - 28)),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.55,
+                    (0, 0, 255),
+                    2,
+                )
+                continue
+            cizilen.add(ihlal.kisi_kutusu)
             self._ihlal_kutusunu_ciz(gosterilecek, ihlal, kopyala=False)
+        return gosterilecek
 
+    def _kareyi_ciz_ve_goster(self, kare: np.ndarray, ihlaller: list[Ihlal]) -> None:
+        gosterilecek = self._ihlal_karelerini_ciz(kare, ihlaller)
         gosterilecek = _ekrana_sigdir(
             gosterilecek, self._gosterim_max_genislik, self._gosterim_max_yukseklik
         )
@@ -315,6 +406,8 @@ class IhlalPipeline:
             cv2.namedWindow(pencere, cv2.WINDOW_NORMAL)
             h, w = gosterilecek.shape[:2]
             cv2.resizeWindow(pencere, w, h)
+            if self._pencere_konum is not None:
+                cv2.moveWindow(pencere, self._pencere_konum[0], self._pencere_konum[1])
             self._gosterim_penceresi_hazir = True
 
         cv2.imshow(pencere, gosterilecek)

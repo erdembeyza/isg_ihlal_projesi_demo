@@ -44,7 +44,7 @@ $argsList = @("-m", "src.main", "--cameras", $cameras)
 if (-not $NoShow) { $argsList += "--show" }
 if ($DryRun) { $argsList += "--dry-run" }
 
-Write-Host "Yuksek Firin A + B kameralari ayni anda baslatiliyor..." -ForegroundColor Cyan
+Write-Host "Yuksek Firin A + B kameralari baslatiliyor (ayri pencereler, yan yana)..." -ForegroundColor Cyan
 Write-Host ("python " + ($argsList -join " ")) -ForegroundColor DarkGray
 Set-Location $aiCore
 & $python @argsList

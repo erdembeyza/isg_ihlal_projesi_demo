@@ -79,7 +79,7 @@ Her kayıt kendi `bolge_id` ile ayrı thread’de izlenir; panelde ihlaller ilgi
 
 ### Yüksek Fırın (A + B aynı anda)
 
-`cameras.yuksek-firin.json`: A ve B bölgesi kameraları video dosyasından **eş anda** döngüde oynar (canlı kamera gibi).
+`cameras.yuksek-firin.json`: A ve B bölgesi kameraları video dosyasından **eş anda** döngüde oynar (canlı kamera gibi). `--show` ile **ayrı pencereler** açılır ve ekranda yan yana yerleştirilir.
 
 ```powershell
 # Repo kökünden (önerilen)
@@ -119,6 +119,12 @@ GOZLUK sınıfı mevcut eğitimde yoktur (BARET / YELEK çalışır).
 Yeni saha görüntüleriyle modeli güncellemek (fine-tune) için:
 `training/README.md` dosyasına bakın.
 
+## Yüz blur (KVKK)
+
+Kanıt fotoğrafında yalnızca **insan yüzleri** küçük karelerle bulanıklaştırılır
+(birden fazla kişi → her yüz ayrı). Blur YOLO kişi kutusu dışına uygulanmaz.
+`--show` canlı pencerede blur yoktur. Uygulama: `face_blur.py`.
+
 ## Mimari
 
 | Dosya | Sorumluluk |
@@ -126,6 +132,7 @@ Yeni saha görüntüleriyle modeli güncellemek (fine-tune) için:
 | `config.py` | `.env` + `cameras.json` |
 | `stream.py` | RTSP açma, TCP, buffer, yeniden bağlanma |
 | `pipeline.py` | Tespit döngüsü, cooldown, bildirim |
+| `face_blur.py` | Kanıt fotosunda tüm yüzleri blurla |
 | `main.py` | CLI / çoklu kamera thread’leri |
 | `ppe_detector.py` | YOLOv8 |
 | `backend_client.py` | JWT + POST ihlal |
