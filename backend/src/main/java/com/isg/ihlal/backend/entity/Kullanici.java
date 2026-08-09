@@ -9,16 +9,22 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 /**
  * TABLO-3 : kullanicilar
  * Sisteme giris yapacak ISG yoneticisi ve formen rolundeki kurumsal personeli tutan tablo.
- * bolge alani yalnizca FORMEN rolu icin doludur (bkz. fk_kullanici_bolge).
+ * bolge / bolgeler alanlari yalnizca FORMEN rolu icin doludur.
+ * Bir formen birden fazla bolgeye (kullanici_bolgeler) baglanabilir.
  */
 @Entity
 @Table(name = "kullanicilar")
@@ -48,9 +54,18 @@ public class Kullanici {
     @Column(name = "rol", nullable = false, length = 20)
     private Rol rol;
 
+    /** Birincil bolge (geriye donuk); coklu erisim icin {@link #bolgeler}. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bolge_id")
     private Bolge bolge;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "kullanici_bolgeler",
+            joinColumns = @JoinColumn(name = "kullanici_id"),
+            inverseJoinColumns = @JoinColumn(name = "bolge_id")
+    )
+    private Set<Bolge> bolgeler = new LinkedHashSet<>();
 
     @NotNull
     @Column(name = "aktif_mi", nullable = false)
@@ -117,6 +132,14 @@ public class Kullanici {
 
     public void setBolge(Bolge bolge) {
         this.bolge = bolge;
+    }
+
+    public Set<Bolge> getBolgeler() {
+        return bolgeler;
+    }
+
+    public void setBolgeler(Set<Bolge> bolgeler) {
+        this.bolgeler = bolgeler != null ? bolgeler : new LinkedHashSet<>();
     }
 
     public Boolean getAktifMi() {

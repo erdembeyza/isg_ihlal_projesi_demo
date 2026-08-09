@@ -2,6 +2,7 @@ package com.isg.ihlal.backend.service;
 
 import com.isg.ihlal.backend.dto.LoginRequestDTO;
 import com.isg.ihlal.backend.dto.LoginResponseDTO;
+import com.isg.ihlal.backend.entity.Bolge;
 import com.isg.ihlal.backend.entity.IslemLog;
 import com.isg.ihlal.backend.entity.Kullanici;
 import com.isg.ihlal.backend.repository.KullaniciRepository;
@@ -12,7 +13,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class AuthService {
@@ -37,7 +42,7 @@ public class AuthService {
     @Transactional
     public LoginResponseDTO login(LoginRequestDTO request) {
         String denenenKullaniciAdi = request.kullaniciAdi().trim();
-        Optional<Kullanici> kullaniciOpt = kullaniciRepository.findByKullaniciAdi(denenenKullaniciAdi);
+        Optional<Kullanici> kullaniciOpt = kullaniciRepository.findByKullaniciAdiWithBolgeler(denenenKullaniciAdi);
 
         if (kullaniciOpt.isEmpty()) {
             islemLogService.basarisizGirisKaydet(null, denenenKullaniciAdi, "Bilinmeyen kullanici adi");
@@ -65,7 +70,8 @@ public class AuthService {
         islemLogService.basariliGirisKaydet(girisLog);
 
         String token = jwtService.generateToken(kullanici);
-        Long bolgeId = kullanici.getBolge() != null ? kullanici.getBolge().getId() : null;
+        List<Long> bolgeIds = bolgeIdsTopla(kullanici);
+        Long bolgeId = bolgeIds.isEmpty() ? null : bolgeIds.getFirst();
 
         return new LoginResponseDTO(
                 token,
@@ -73,7 +79,23 @@ public class AuthService {
                 kullanici.getKullaniciAdi(),
                 kullanici.getRol().name(),
                 kullanici.getAdSoyad(),
-                bolgeId
+                bolgeId,
+                bolgeIds
         );
+    }
+
+    private static List<Long> bolgeIdsTopla(Kullanici kullanici) {
+        Set<Long> ids = new LinkedHashSet<>();
+        if (kullanici.getBolgeler() != null) {
+            for (Bolge bolge : kullanici.getBolgeler()) {
+                if (bolge != null && bolge.getId() != null) {
+                    ids.add(bolge.getId());
+                }
+            }
+        }
+        if (kullanici.getBolge() != null && kullanici.getBolge().getId() != null) {
+            ids.add(kullanici.getBolge().getId());
+        }
+        return new ArrayList<>(ids);
     }
 }

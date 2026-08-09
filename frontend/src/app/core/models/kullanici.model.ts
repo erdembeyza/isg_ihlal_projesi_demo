@@ -7,6 +7,7 @@ export interface KullaniciRequest {
   adSoyad: string;
   rol: Rol;
   bolgeId: number | null;
+  bolgeIds?: number[] | null;
 }
 
 /** Backend: KullaniciResponseDTO */
@@ -17,6 +18,7 @@ export interface KullaniciResponse {
   rol: Rol;
   bolgeId: number | null;
   bolgeAdi: string | null;
+  bolgeIds?: number[];
   aktifMi: boolean;
   eposta: string | null;
   telefon: string | null;
@@ -28,6 +30,7 @@ export interface KullaniciGuncelleRequest {
   adSoyad: string;
   rol: Rol;
   bolgeId: number | null;
+  bolgeIds?: number[] | null;
   aktifMi: boolean;
   yeniSifre?: string | null;
   eposta?: string | null;

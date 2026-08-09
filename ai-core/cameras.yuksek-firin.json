@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Yuksek Firin A Bolgesi kamerasi",
+    "bolge_id": 4,
+    "video_source": "test_videos/a_bolgesi.mp4"
+  },
+  {
+    "name": "Yuksek Firin B Bolgesi kamerasi",
+    "bolge_id": 5,
+    "video_source": "test_videos/b_bolgesi.mp4"
+  }
+]

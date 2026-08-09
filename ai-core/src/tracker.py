@@ -2,15 +2,15 @@
 Basit IoU tabanlı geçici kişi takibi (kimlik tanıma yok).
 
 Amaç: aynı siluet kareler boyunca izlenip ihlal süresi biriktirilsin;
-eşik aşılınca backend'e bildirilsin. Süre, atlanan karelerde de gerçek
-zamanla ilerler (devam_et).
+eşik aşılınca backend'e bildirilsin. Aynı tip için global cooldown ile
+video döngüsünde / kısa aralıklı tekrar kayıtlar engellenir.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
 
-def _iou(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> float:
+def kutu_iou(a: tuple[int, int, int, int], b: tuple[int, int, int, int]) -> float:
     ax1, ay1, ax2, ay2 = a
     bx1, by1, bx2, by2 = b
     ix1, iy1 = max(ax1, bx1), max(ay1, by1)
@@ -32,7 +32,6 @@ class AktifTrack:
     son_gorulme: float
     ihlal_sureleri: dict[str, float] = field(default_factory=dict)
     bildirilen_tipler: set[str] = field(default_factory=set)
-    son_ihlal_zamani: dict[str, float] = field(default_factory=dict)
     son_guven: dict[str, float] = field(default_factory=dict)
 
 
@@ -49,15 +48,19 @@ class IoUTracker:
     def __init__(
         self,
         *,
-        iou_esigi: float = 0.30,
-        kayip_tolerans_saniye: float = 2.0,
+        iou_esigi: float = 0.25,
+        kayip_tolerans_saniye: float = 6.0,
         min_sure_saniye: float = 8.0,
+        yeniden_bildirim_saniye: float = 120.0,
     ) -> None:
         self._iou_esigi = iou_esigi
         self._kayip_tolerans = kayip_tolerans_saniye
         self._min_sure = min_sure_saniye
+        self._yeniden_bildirim = max(1.0, yeniden_bildirim_saniye)
         self._sonraki_id = 1
         self._trackler: dict[int, AktifTrack] = {}
+        # Tip bazinda kamera geneli cooldown (track olumunde bile spam olmaz).
+        self._son_global_bildirim: dict[str, float] = {}
 
     def devam_et(self, dt: float, simdi: float) -> list[BildirilecekIhlal]:
         """YOLO atlanan karelerde mevcut ihlal surelerini gercek zamanla ilerlet."""
@@ -66,6 +69,8 @@ class IoUTracker:
         for track in self._trackler.values():
             for tip in list(track.ihlal_sureleri.keys()):
                 if tip in track.bildirilen_tipler:
+                    continue
+                if self._cooldown_aktif(tip, simdi):
                     continue
                 track.ihlal_sureleri[tip] = track.ihlal_sureleri.get(tip, 0.0) + dt
         return self._esik_kontrolu(simdi, kaybolanlari_temizle=False)
@@ -86,7 +91,7 @@ class IoUTracker:
         adaylar: list[tuple[float, int, tuple[int, int, int, int]]] = []
         for tid, track in self._trackler.items():
             for kutu in kutular:
-                skor = _iou(track.kutu, kutu)
+                skor = kutu_iou(track.kutu, kutu)
                 if skor >= self._iou_esigi:
                     adaylar.append((skor, tid, kutu))
         adaylar.sort(reverse=True)
@@ -112,6 +117,10 @@ class IoUTracker:
 
         return self._esik_kontrolu(simdi, kaybolanlari_temizle=True, eslesmeyen=eslesmeyen_track_idler)
 
+    def _cooldown_aktif(self, tip: str, simdi: float) -> bool:
+        son = self._son_global_bildirim.get(tip)
+        return son is not None and (simdi - son) < self._yeniden_bildirim
+
     def _esik_kontrolu(
         self,
         simdi: float,
@@ -125,8 +134,12 @@ class IoUTracker:
             for tip, sure in list(track.ihlal_sureleri.items()):
                 if tip in track.bildirilen_tipler:
                     continue
+                if self._cooldown_aktif(tip, simdi):
+                    # Yeni track olsabile cooldown varken sure sifirla; spam birikmesin.
+                    track.ihlal_sureleri[tip] = 0.0
+                    continue
                 if sure >= self._min_sure:
-                    track.bildirilen_tipler.add(tip)
+                    self._bildirimi_isaretle(track, tip, simdi)
                     bildirilecek.append(
                         BildirilecekIhlal(
                             track_id=track.track_id,
@@ -146,8 +159,10 @@ class IoUTracker:
                 for tip, sure in track.ihlal_sureleri.items():
                     if tip in track.bildirilen_tipler:
                         continue
+                    if self._cooldown_aktif(tip, simdi):
+                        continue
                     if sure >= self._min_sure:
-                        track.bildirilen_tipler.add(tip)
+                        self._bildirimi_isaretle(track, tip, simdi)
                         bildirilecek.append(
                             BildirilecekIhlal(
                                 track_id=track.track_id,
@@ -163,11 +178,17 @@ class IoUTracker:
 
         return bildirilecek
 
+    def _bildirimi_isaretle(self, track: AktifTrack, tip: str, simdi: float) -> None:
+        track.bildirilen_tipler.add(tip)
+        self._son_global_bildirim[tip] = simdi
+
     def _sure_biriktir(self, track: AktifTrack, ihlaller: list, simdi: float, dt: float) -> None:
         if dt <= 0:
             return
         for ihlal in ihlaller:
             tip = ihlal.ihlal_tipi_adi
+            if tip in track.bildirilen_tipler or self._cooldown_aktif(tip, simdi):
+                track.son_guven[tip] = ihlal.guven
+                continue
             track.ihlal_sureleri[tip] = track.ihlal_sureleri.get(tip, 0.0) + dt
-            track.son_ihlal_zamani[tip] = simdi
             track.son_guven[tip] = ihlal.guven

@@ -113,18 +113,37 @@ def akisi_surdur(
     yakalayici: cv2.VideoCapture | None = None
     kaynak_etiket = kaynak_normalize(kaynak)
 
+    def _kapat() -> None:
+        nonlocal yakalayici
+        if yakalayici is not None:
+            try:
+                yakalayici.release()
+            except Exception:
+                pass
+            yakalayici = None
+
+    def _dosyayi_basa_sar() -> None:
+        """
+        Yerel videoda POS_FRAMES=0 bazi MP4'lerde (ozellikle A kaydi) calismaz;
+        EOF sonrasi isOpened False olabilir. Guvenli yol: kapatip yeniden ac.
+        """
+        nonlocal deneme
+        logger.info("Video bitti, basa sariliyor (yeniden aciliyor): %s", kaynak_etiket)
+        _kapat()
+        deneme = 0
+
     try:
         while True:
             if yakalayici is None or not yakalayici.isOpened():
-                if yakalayici is not None:
-                    yakalayici.release()
+                _kapat()
                 logger.info("Video kaynagi aciliyor: %s", kaynak_etiket)
                 yakalayici = yakalayici_ac(
                     kaynak_etiket, buffer_size=buffer_size, rtsp_tcp=rtsp_tcp
                 )
                 if not yakalayici.isOpened():
                     deneme += 1
-                    if not canli and deneme >= 1:
+                    # Dongulu dosya: gecici acilamama yuzunden pipeline olmesin.
+                    if not canli and not dongu_dosya and deneme >= 1:
                         raise RuntimeError(
                             f"Video kaynagi acilamadi: {kaynak_etiket}. "
                             "Webcam icin Windows kamera iznini kontrol edin."
@@ -158,8 +177,7 @@ def akisi_surdur(
                         yeniden_baglan_saniye,
                         deneme,
                     )
-                    yakalayici.release()
-                    yakalayici = None
+                    _kapat()
                     if max_yeniden_baglanma >= 0 and deneme > max_yeniden_baglanma:
                         raise RuntimeError(
                             f"Canli akis yeniden baglanamadi: {kaynak_etiket}"
@@ -168,15 +186,22 @@ def akisi_surdur(
                     continue
 
                 if dongu_dosya:
-                    logger.info("Video bitti, basa sariliyor.")
-                    yakalayici.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                    _dosyayi_basa_sar()
                     continue
 
                 logger.info("Video kaynagi bitti, pipeline durduruluyor.")
                 break
 
-            if not kare_isle(kare):
+            try:
+                devam = kare_isle(kare)
+            except Exception:
+                logger.exception(
+                    "Kare isleme hatasi (kaynak=%s); akis devam ediyor.",
+                    kaynak_etiket,
+                )
+                continue
+
+            if not devam:
                 break
     finally:
-        if yakalayici is not None:
-            yakalayici.release()
+        _kapat()

@@ -47,35 +47,42 @@
       </article>
     </section>
 
-    <div class="ust-grid">
-      <section class="kart">
-        <h2>Bölge İstatistikleri</h2>
-        <app-istatistik-grafik [istatistikler]="istatistikler()" (tipSecildi)="grafiktenTipSecildi($event)" />
-      </section>
-
-      <section class="kart personel-kart">
-        <h2>En Çok İhlal Yapan Personeller</h2>
-        @if (personelIstatistikleri().length === 0) {
-        <p class="bos-personel">Personel eşleşmeli ihlal kaydı yok.</p>
+    @if (yuksekFirinBolgeAnalizi(); as bolgeAnaliz) {
+    <section class="kart bolge-analiz" aria-label="En çok ihlal yapılan bölge analizi">
+      <h2>En Çok İhlal Yapılan Bölge</h2>
+      <p class="analiz-ozet">
+        @if (bolgeAnaliz.toplam === 0) {
+          Henüz A veya B bölgesinde kayıtlı ihlal yok.
+        } @else if (bolgeAnaliz.esitMi) {
+          A ve B bölgeleri eşit: <strong>{{ bolgeAnaliz.enCok.toplam }}</strong> ihlal.
         } @else {
-        <ul class="personel-listesi">
-          @for (p of personelIstatistikleri().slice(0, 5); track p.personelId; let i = $index) {
-          <li>
-            <span class="sira">{{ i + 1 }}</span>
-            <div class="personel-bilgi">
-              <strong>{{ p.personelAdi }}</strong>
-              <span class="meta">{{ p.sicilNo }}@if (p.departman) { · {{ p.departman }} }</span>
-            </div>
-            <div class="personel-ozet">
-              <span class="adet">{{ p.toplamIhlal }} ihlal</span>
-              <span class="kategori">{{ p.enCokIhlalKategorisi }}</span>
-            </div>
-          </li>
-          }
-        </ul>
+          En çok ihlal:
+          <strong>{{ bolgeAnaliz.enCok.bolgeAdi }}</strong>
+          ({{ bolgeAnaliz.enCok.toplam }} / {{ bolgeAnaliz.toplam }} —
+          %{{ bolgeAnaliz.enCok.yuzde }})
         }
-      </section>
-    </div>
+      </p>
+      <ul class="bolge-karsilastirma">
+        @for (b of bolgeAnaliz.bolgeler; track b.kisaAd) {
+        <li [class.lider]="!bolgeAnaliz.esitMi && b.kisaAd === bolgeAnaliz.enCok.kisaAd && bolgeAnaliz.toplam > 0">
+          <div class="bolge-ust">
+            <span class="bolge-kisa">{{ b.kisaAd }}</span>
+            <span class="bolge-adet">{{ b.toplam }} ihlal · {{ b.aktif }} aktif</span>
+          </div>
+          <div class="bar-iz" aria-hidden="true">
+            <div class="bar-dolgu" [style.width.%]="b.yuzde"></div>
+          </div>
+          <span class="bolge-tam">{{ b.bolgeAdi }}</span>
+        </li>
+        }
+      </ul>
+    </section>
+    }
+
+    <section class="kart">
+      <h2>Bölge İstatistikleri</h2>
+      <app-istatistik-grafik [istatistikler]="istatistikler()" (tipSecildi)="grafiktenTipSecildi($event)" />
+    </section>
 
     <section class="kart">
       <div class="liste-basligi">

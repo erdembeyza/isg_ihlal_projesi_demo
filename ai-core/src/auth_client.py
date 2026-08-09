@@ -6,6 +6,7 @@ yenileyen kucuk bir istemci.
 from __future__ import annotations
 
 import logging
+import threading
 import time
 
 import requests
@@ -26,13 +27,17 @@ class BackendOturumu:
         self._ayarlar = ayarlar
         self._token: str | None = None
         self._token_alindigi_zaman: float = 0.0
+        self._kilit = threading.Lock()
 
     def token_al(self, zorla_yenile: bool = False) -> str:
-        token_bayat = (time.monotonic() - self._token_alindigi_zaman) > TOKEN_YENILEME_ESIGI_SANIYE
-        if self._token is None or token_bayat or zorla_yenile:
-            self._giris_yap()
-        assert self._token is not None
-        return self._token
+        with self._kilit:
+            token_bayat = (
+                time.monotonic() - self._token_alindigi_zaman
+            ) > TOKEN_YENILEME_ESIGI_SANIYE
+            if self._token is None or token_bayat or zorla_yenile:
+                self._giris_yap()
+            assert self._token is not None
+            return self._token
 
     def _giris_yap(self) -> None:
         istek = {
