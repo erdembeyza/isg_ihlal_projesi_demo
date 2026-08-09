@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Her Pazartesi 08:00'de onceki 7 gunun ozetini Telegram'a gonderir.
@@ -38,7 +39,7 @@ public class HaftalikRaporScheduler {
         LocalDate baslangic = bitis.minusDays(6);
 
         // Cron sistem kullanicisi: tum fabrika kapsami (bolge filtresi yok)
-        AuthenticatedUser sistem = new AuthenticatedUser(0L, "sistem", "ISG_YONETICI", null);
+        AuthenticatedUser sistem = new AuthenticatedUser(0L, "sistem", "ISG_YONETICI", null, List.of());
         HaftalikRaporOzetDTO ozet = raporService.ozet(sistem, baslangic, bitis);
 
         String mesaj = """

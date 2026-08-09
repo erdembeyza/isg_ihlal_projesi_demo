@@ -50,9 +50,10 @@ Panel: `http://localhost:4200`
 
 | Kullanıcı | Şifre | Rol |
 |---|---|---|
-| `admin` | `Admin123!` | ISG_YONETICI (tüm fabrika) |
-| `formen1` | `Formen123!` | FORMEN (kendi bölgesi) |
-| `izleyici` | `Izleyici123!` | GORUNTULEYICI (salt okunur) |
+| `admin` | `Admin123!` | ISG_YONETICI (tüm fabrika; Yüksek Fırın dahil) |
+| `formen1` | `Formen123!` | FORMEN (Yüksek Fırın A + B bölgeleri) |
+| `izleyici` | `Izleyici123!` | GORUNTULEYICI (salt okunur; tüm fabrika) |
+| `formen2` / `formen3` | `Formen123!` | FORMEN (diğer bölgeler; Yüksek Fırın görmez) |
 
 > Yalnızca geliştirme/test içindir; üretimde değiştirilmelidir.
 
@@ -73,6 +74,7 @@ veya repo kökünden: `.\scripts\start-ai-core.ps1`
 
 - Servis hesabı: `ai_core_servis` / `AiCore123!` (yalnızca dev)
 - Çoklu kamera: `cameras.example.json` → `cameras.json`, sonra `python -m src.main --cameras cameras.json`
+- **Yüksek Fırın A+B (video = canlı):** `.\scripts\start-yuksek-firin.ps1` — iki kamera aynı anda oynar
 - Kamera yokken test: `python -m src.main --source test_videos\demo2.mp4 --loop --show`
 - Panelde görünen: ihlal anı **fotoğrafı** (kaynak video siteye gitmez)
 

@@ -7,7 +7,6 @@ import { IhlalService } from '../../core/services/ihlal.service';
 import {
   Ihlal,
   IhlalIstatistik,
-  PersonelIstatistik,
   durumEtiketi,
 } from '../../core/models/ihlal.model';
 import { IhlalListesiComponent } from '../../shared/components/ihlal-listesi/ihlal-listesi';
@@ -22,6 +21,35 @@ type RiskDurumu = {
   etiket: string;
   seviye: 'stabil' | 'kritik';
 };
+
+type BolgeIhlalOzeti = {
+  bolgeAdi: string;
+  kisaAd: string;
+  toplam: number;
+  aktif: number;
+  yuzde: number;
+};
+
+type YuksekFirinBolgeAnalizi = {
+  bolgeler: BolgeIhlalOzeti[];
+  enCok: BolgeIhlalOzeti;
+  esitMi: boolean;
+  toplam: number;
+};
+
+function yuksekFirinKisaAd(bolgeAdi: string): string | null {
+  const ad = bolgeAdi.trim().toLocaleLowerCase('tr-TR');
+  if (!ad.includes('fırın') && !ad.includes('firin')) {
+    return null;
+  }
+  if (ad.includes('a bölgesi') || ad.includes('a bolgesi')) {
+    return 'A Bölgesi';
+  }
+  if (ad.includes('b bölgesi') || ad.includes('b bolgesi')) {
+    return 'B Bölgesi';
+  }
+  return null;
+}
 
 /**
  * COMPONENT-3 (tasarim_mimari.md): Formen Dashboard'u.
@@ -46,7 +74,6 @@ export class ForemanDashboard {
 
   protected readonly ihlaller = signal<Ihlal[]>([]);
   protected readonly istatistikler = signal<IhlalIstatistik[]>([]);
-  protected readonly personelIstatistikleri = signal<PersonelIstatistik[]>([]);
   protected readonly yukleniyor = signal(true);
   protected readonly hataMesaji = signal<string | null>(null);
   protected readonly cozuluyorId = signal<number | null>(null);
@@ -103,6 +130,71 @@ export class ForemanDashboard {
     return [...veri].sort((a, b) => Math.abs(b.yuzdeDegisim) - Math.abs(a.yuzdeDegisim))[0];
   });
 
+  /** Yüksek Fırın A/B formenleri için bölge bazlı ihlal analizi. */
+  protected readonly yuksekFirinBolgeAnalizi = computed<YuksekFirinBolgeAnalizi | null>(() => {
+    const harita = new Map<string, { bolgeAdi: string; kisaAd: string; toplam: number; aktif: number }>();
+
+    const bolgeyiKaydet = (bolgeAdi: string) => {
+      const kisaAd = yuksekFirinKisaAd(bolgeAdi);
+      if (!kisaAd) {
+        return null;
+      }
+      if (!harita.has(kisaAd)) {
+        harita.set(kisaAd, { bolgeAdi, kisaAd, toplam: 0, aktif: 0 });
+      }
+      return kisaAd;
+    };
+
+    for (const istatistik of this.istatistikler()) {
+      bolgeyiKaydet(istatistik.bolgeAdi);
+    }
+
+    for (const ihlal of this.ihlaller()) {
+      const kisaAd = bolgeyiKaydet(ihlal.bolgeAdi);
+      if (!kisaAd) {
+        continue;
+      }
+      const mevcut = harita.get(kisaAd)!;
+      mevcut.bolgeAdi = ihlal.bolgeAdi;
+      mevcut.toplam += 1;
+      if (ihlal.durum === 'AKTIF') {
+        mevcut.aktif += 1;
+      }
+    }
+
+    const aVar = harita.has('A Bölgesi');
+    const bVar = harita.has('B Bölgesi');
+    // Yüksek Fırın formenleri JWT'de A+B (2+ bolgeIds) taşır; demo'da çoklu bölge = YF.
+    const cokluBolgeFormen = (this.authService.currentUser()?.bolgeIds?.length ?? 0) >= 2;
+    if (!cokluBolgeFormen && !(aVar && bVar)) {
+      return null;
+    }
+
+    const sablon: Array<{ kisaAd: string; varsayilanAd: string }> = [
+      { kisaAd: 'A Bölgesi', varsayilanAd: 'Yüksek Fırın A Bolgesi' },
+      { kisaAd: 'B Bölgesi', varsayilanAd: 'Yüksek Fırın B Bolgesi' },
+    ];
+
+    const toplam = [...harita.values()].reduce((s, b) => s + b.toplam, 0);
+    const bolgeler: BolgeIhlalOzeti[] = sablon.map(({ kisaAd, varsayilanAd }) => {
+      const kayit = harita.get(kisaAd);
+      const adet = kayit?.toplam ?? 0;
+      return {
+        bolgeAdi: kayit?.bolgeAdi ?? varsayilanAd,
+        kisaAd,
+        toplam: adet,
+        aktif: kayit?.aktif ?? 0,
+        yuzde: toplam > 0 ? Math.round((adet / toplam) * 100) : 0,
+      };
+    });
+
+    const sirali = [...bolgeler].sort((a, b) => b.toplam - a.toplam);
+    const enCok = sirali[0];
+    const esitMi = sirali[0].toplam === sirali[1].toplam;
+
+    return { bolgeler, enCok, esitMi, toplam };
+  });
+
   constructor() {
     this.verileriYukle(true);
     interval(CANLI_YENILEME_MS)
@@ -135,9 +227,6 @@ export class ForemanDashboard {
     });
 
     this.ihlalService.istatistik().subscribe({ next: (veri) => this.istatistikler.set(veri) });
-    this.ihlalService.personelIstatistik().subscribe({
-      next: (veri) => this.personelIstatistikleri.set(veri),
-    });
   }
 
   tipFiltresiDegisti(tip: string): void {
@@ -183,9 +272,6 @@ export class ForemanDashboard {
           this.secilenIhlal.set(guncel);
         }
         this.cozuluyorId.set(null);
-        this.ihlalService.personelIstatistik().subscribe({
-          next: (veri) => this.personelIstatistikleri.set(veri),
-        });
         this.ihlalService.istatistik().subscribe({ next: (veri) => this.istatistikler.set(veri) });
       },
       error: () => {

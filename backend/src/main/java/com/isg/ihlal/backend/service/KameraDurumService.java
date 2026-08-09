@@ -58,7 +58,7 @@ public class KameraDurumService {
     public List<KameraDurumDTO> listele(AuthenticatedUser user) {
         LocalDateTime simdi = LocalDateTime.now();
         List<KameraDurumu> kayitlar = isFormen(user)
-                ? kameraDurumuRepository.findByBolgeId(user.bolgeId())
+                ? kameraDurumuRepository.findByBolgeIdIn(user.erisilebilirBolgeIds())
                 : kameraDurumuRepository.findAllByOrderByBolgeIdAscKameraAdiAsc();
 
         return kayitlar.stream()

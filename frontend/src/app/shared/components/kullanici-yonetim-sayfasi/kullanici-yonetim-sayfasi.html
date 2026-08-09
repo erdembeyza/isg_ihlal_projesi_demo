@@ -50,13 +50,13 @@
             </div>
             @if (yeniKullaniciForm.controls.rol.value === 'FORMEN') {
               <div class="tam-genislik">
-                <label for="ykBolge">Bölge</label>
-                <select id="ykBolge" formControlName="bolgeId">
-                  <option [value]="''">Seçiniz…</option>
+                <label for="ykBolge">Bölge(ler)</label>
+                <select id="ykBolge" formControlName="bolgeIds" multiple size="4">
                   @for (bolge of bolgeler(); track bolge.id) {
                     <option [value]="bolge.id">{{ bolge.bolgeAdi }}</option>
                   }
                 </select>
+                <small class="alan-ipucu">Ctrl/Cmd ile birden fazla bölge seçilebilir (ör. Yüksek Fırın A + B).</small>
               </div>
             }
             <div class="tam-genislik">
@@ -182,13 +182,13 @@
           </div>
           @if (duzenleForm.controls.rol.value === 'FORMEN') {
             <div class="tam-genislik">
-              <label>Bölge</label>
-              <select formControlName="bolgeId">
-                <option [value]="''">Seçiniz…</option>
+              <label>Bölge(ler)</label>
+              <select formControlName="bolgeIds" multiple size="4">
                 @for (bolge of bolgeler(); track bolge.id) {
                   <option [value]="bolge.id">{{ bolge.bolgeAdi }}</option>
                 }
               </select>
+              <small class="alan-ipucu">Ctrl/Cmd ile birden fazla bölge seçilebilir.</small>
             </div>
           }
           <div class="tam-genislik">

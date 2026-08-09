@@ -81,14 +81,14 @@ export class KullaniciYonetimSayfasiComponent implements OnInit {
     sifre: ['', [Validators.required, Validators.minLength(6)]],
     adSoyad: ['', [Validators.required]],
     rol: ['FORMEN' as Rol, [Validators.required]],
-    bolgeId: [null as number | null],
+    bolgeIds: [[] as number[]],
   });
 
   protected readonly duzenleForm = this.fb.nonNullable.group({
     kullaniciAdi: ['', [Validators.required, Validators.minLength(3)]],
     adSoyad: ['', [Validators.required]],
     rol: ['FORMEN' as Rol, [Validators.required]],
-    bolgeId: [null as number | null],
+    bolgeIds: [[] as number[]],
     aktifMi: [true],
     yeniSifre: [''],
     eposta: [''],
@@ -130,9 +130,9 @@ export class KullaniciYonetimSayfasiComponent implements OnInit {
       return;
     }
     const deger = this.yeniKullaniciForm.getRawValue();
-    const bolgeId = this.bolgeIdCozumle(deger.rol, deger.bolgeId);
-    if (deger.rol === 'FORMEN' && bolgeId == null) {
-      this.mesaj.set({ tur: 'hata', metin: 'Formen rolü için bölge seçimi zorunludur.' });
+    const bolgeIds = this.bolgeIdsCozumle(deger.rol, deger.bolgeIds);
+    if (deger.rol === 'FORMEN' && bolgeIds.length === 0) {
+      this.mesaj.set({ tur: 'hata', metin: 'Formen rolü için en az bir bölge seçimi zorunludur.' });
       return;
     }
     this.kaydediliyor.set(true);
@@ -143,13 +143,14 @@ export class KullaniciYonetimSayfasiComponent implements OnInit {
         sifre: deger.sifre,
         adSoyad: deger.adSoyad,
         rol: deger.rol,
-        bolgeId: deger.rol === 'FORMEN' ? bolgeId : null,
+        bolgeId: deger.rol === 'FORMEN' ? bolgeIds[0] : null,
+        bolgeIds: deger.rol === 'FORMEN' ? bolgeIds : null,
       })
       .subscribe({
         next: (yanit) => {
           this.kaydediliyor.set(false);
           this.mesaj.set({ tur: 'basari', metin: `"${yanit.kullaniciAdi}" kullanıcısı oluşturuldu.` });
-          this.yeniKullaniciForm.reset({ kullaniciAdi: '', sifre: '', adSoyad: '', rol: 'FORMEN', bolgeId: null });
+          this.yeniKullaniciForm.reset({ kullaniciAdi: '', sifre: '', adSoyad: '', rol: 'FORMEN', bolgeIds: [] });
           this.kullanicilariYukle();
         },
         error: (hata: HttpErrorResponse) => {
@@ -172,11 +173,17 @@ export class KullaniciYonetimSayfasiComponent implements OnInit {
 
   duzenlemeyiAc(kullanici: KullaniciResponse): void {
     this.duzenlenenId.set(kullanici.id);
+    const bolgeIds =
+      kullanici.bolgeIds && kullanici.bolgeIds.length > 0
+        ? [...kullanici.bolgeIds]
+        : kullanici.bolgeId != null
+          ? [kullanici.bolgeId]
+          : [];
     this.duzenleForm.setValue({
       kullaniciAdi: kullanici.kullaniciAdi,
       adSoyad: kullanici.adSoyad,
       rol: kullanici.rol,
-      bolgeId: kullanici.bolgeId,
+      bolgeIds,
       aktifMi: kullanici.aktifMi,
       yeniSifre: '',
       eposta: kullanici.eposta ?? '',
@@ -196,9 +203,9 @@ export class KullaniciYonetimSayfasiComponent implements OnInit {
       return;
     }
     const deger = this.duzenleForm.getRawValue();
-    const bolgeId = this.bolgeIdCozumle(deger.rol, deger.bolgeId);
-    if (deger.rol === 'FORMEN' && bolgeId == null) {
-      this.mesaj.set({ tur: 'hata', metin: 'Formen rolü için bölge seçimi zorunludur.' });
+    const bolgeIds = this.bolgeIdsCozumle(deger.rol, deger.bolgeIds);
+    if (deger.rol === 'FORMEN' && bolgeIds.length === 0) {
+      this.mesaj.set({ tur: 'hata', metin: 'Formen rolü için en az bir bölge seçimi zorunludur.' });
       return;
     }
     const yeniSifre = deger.yeniSifre.trim();
@@ -213,7 +220,8 @@ export class KullaniciYonetimSayfasiComponent implements OnInit {
         kullaniciAdi: deger.kullaniciAdi.trim(),
         adSoyad: deger.adSoyad,
         rol: deger.rol,
-        bolgeId: deger.rol === 'FORMEN' ? bolgeId : null,
+        bolgeId: deger.rol === 'FORMEN' ? bolgeIds[0] : null,
+        bolgeIds: deger.rol === 'FORMEN' ? bolgeIds : null,
         aktifMi: deger.aktifMi,
         yeniSifre: yeniSifre || null,
         eposta: deger.eposta.trim() || null,
@@ -270,14 +278,12 @@ export class KullaniciYonetimSayfasiComponent implements OnInit {
     });
   }
 
-  private bolgeIdCozumle(rol: Rol, bolgeId: number | null | string): number | null {
-    if (rol !== 'FORMEN') {
-      return null;
+  private bolgeIdsCozumle(rol: Rol, bolgeIds: number[] | (string | number)[] | null | undefined): number[] {
+    if (rol !== 'FORMEN' || !bolgeIds?.length) {
+      return [];
     }
-    if (bolgeId === null || bolgeId === '' || bolgeId === undefined) {
-      return null;
-    }
-    const sayi = Number(bolgeId);
-    return Number.isNaN(sayi) ? null : sayi;
+    return bolgeIds
+      .map((v) => Number(v))
+      .filter((n) => !Number.isNaN(n));
   }
 }

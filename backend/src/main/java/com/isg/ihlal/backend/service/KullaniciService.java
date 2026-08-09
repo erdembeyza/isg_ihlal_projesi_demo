@@ -22,8 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -50,12 +54,12 @@ public class KullaniciService {
         return kullaniciRepository.findAll().stream()
                 .filter(k -> k.getRol() != Rol.AI_CORE_SERVIS)
                 .sorted(Comparator.comparing(Kullanici::getAdSoyad, String.CASE_INSENSITIVE_ORDER))
-                .map(this::toDto)
+                .map(k -> toDto(kullaniciRepository.findByIdWithBolgeler(k.getId()).orElse(k)))
                 .toList();
     }
 
     public ProfilResponseDTO profilGetir(AuthenticatedUser user) {
-        return toProfilDto(bul(user.kullaniciId()));
+        return toProfilDto(bulWithBolgeler(user.kullaniciId()));
     }
 
     @Transactional
@@ -71,14 +75,14 @@ public class KullaniciService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu kullanici adi zaten kullanimda: " + dto.kullaniciAdi());
         }
 
-        Bolge bolge = bolgeCozumle(dto.rol(), dto.bolgeId());
+        List<Bolge> bolgeler = bolgeleriCozumle(dto.rol(), dto.bolgeId(), dto.bolgeIds());
 
         Kullanici kullanici = new Kullanici();
         kullanici.setKullaniciAdi(dto.kullaniciAdi());
         kullanici.setSifreHash(passwordEncoder.encode(dto.sifre()));
         kullanici.setAdSoyad(dto.adSoyad());
         kullanici.setRol(dto.rol());
-        kullanici.setBolge(bolge);
+        bolgeleriAta(kullanici, bolgeler);
         kullanici.setAktifMi(Boolean.TRUE);
 
         return toDto(kullaniciRepository.save(kullanici));
@@ -86,7 +90,7 @@ public class KullaniciService {
 
     @Transactional
     public KullaniciResponseDTO guncelle(Long id, KullaniciGuncelleRequestDTO dto, AuthenticatedUser yapan) {
-        Kullanici kullanici = bul(id);
+        Kullanici kullanici = bulWithBolgeler(id);
         servisHesabiKontrolu(kullanici);
 
         if (dto.rol() == Rol.AI_CORE_SERVIS) {
@@ -102,12 +106,12 @@ public class KullaniciService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bu kullanici adi zaten kullanimda: " + yeniKullaniciAdi);
         }
 
-        Bolge bolge = bolgeCozumle(dto.rol(), dto.bolgeId());
+        List<Bolge> bolgeler = bolgeleriCozumle(dto.rol(), dto.bolgeId(), dto.bolgeIds());
 
         kullanici.setKullaniciAdi(yeniKullaniciAdi);
         kullanici.setAdSoyad(dto.adSoyad().trim());
         kullanici.setRol(dto.rol());
-        kullanici.setBolge(bolge);
+        bolgeleriAta(kullanici, bolgeler);
         kullanici.setAktifMi(dto.aktifMi());
         kullanici.setEposta(bosMetin(dto.eposta()));
         kullanici.setTelefon(bosMetin(dto.telefon()));
@@ -139,7 +143,7 @@ public class KullaniciService {
 
     @Transactional
     public ProfilResponseDTO profilGuncelle(AuthenticatedUser user, ProfilGuncelleRequestDTO dto) {
-        Kullanici kullanici = bul(user.kullaniciId());
+        Kullanici kullanici = bulWithBolgeler(user.kullaniciId());
         kullanici.setAdSoyad(dto.adSoyad().trim());
         Kullanici guncellenen = kullaniciRepository.save(kullanici);
         logYaz(user.kullaniciId(), "PROFIL_GUNCELLEME", "Profil ad soyad guncellendi");
@@ -168,21 +172,50 @@ public class KullaniciService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Kullanici bulunamadi: " + id));
     }
 
+    private Kullanici bulWithBolgeler(Long id) {
+        return kullaniciRepository.findByIdWithBolgeler(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Kullanici bulunamadi: " + id));
+    }
+
     private void servisHesabiKontrolu(Kullanici kullanici) {
         if (kullanici.getRol() == Rol.AI_CORE_SERVIS) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Servis hesabi duzenlenemez");
         }
     }
 
-    private Bolge bolgeCozumle(Rol rol, Long bolgeId) {
-        if (rol == Rol.FORMEN) {
-            if (bolgeId == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "FORMEN rolu icin bolgeId zorunludur");
-            }
-            return bolgeRepository.findById(bolgeId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bolge bulunamadi: " + bolgeId));
+    private List<Bolge> bolgeleriCozumle(Rol rol, Long bolgeId, List<Long> bolgeIds) {
+        if (rol != Rol.FORMEN) {
+            return List.of();
         }
-        return null;
+
+        LinkedHashSet<Long> ids = new LinkedHashSet<>();
+        if (bolgeIds != null) {
+            for (Long id : bolgeIds) {
+                if (id != null) {
+                    ids.add(id);
+                }
+            }
+        }
+        if (ids.isEmpty() && bolgeId != null) {
+            ids.add(bolgeId);
+        }
+        if (ids.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "FORMEN rolu icin en az bir bolge zorunludur");
+        }
+
+        List<Bolge> bolgeler = new ArrayList<>();
+        for (Long id : ids) {
+            Bolge bolge = bolgeRepository.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bolge bulunamadi: " + id));
+            bolgeler.add(bolge);
+        }
+        return bolgeler;
+    }
+
+    private void bolgeleriAta(Kullanici kullanici, List<Bolge> bolgeler) {
+        Set<Bolge> set = new LinkedHashSet<>(bolgeler);
+        kullanici.setBolgeler(set);
+        kullanici.setBolge(bolgeler.isEmpty() ? null : bolgeler.getFirst());
     }
 
     private void logYaz(Long kullaniciId, String islemTipi, String detay) {
@@ -196,14 +229,19 @@ public class KullaniciService {
     }
 
     private KullaniciResponseDTO toDto(Kullanici kullanici) {
-        Bolge bolge = kullanici.getBolge();
+        List<Bolge> bolgeler = siraliBolgeler(kullanici);
+        List<Long> bolgeIds = bolgeler.stream().map(Bolge::getId).toList();
+        String bolgeAdi = bolgeler.stream().map(Bolge::getBolgeAdi).collect(Collectors.joining(", "));
+        Long birincilId = bolgeIds.isEmpty() ? null : bolgeIds.getFirst();
+
         return new KullaniciResponseDTO(
                 kullanici.getId(),
                 kullanici.getKullaniciAdi(),
                 kullanici.getAdSoyad(),
                 kullanici.getRol().name(),
-                bolge != null ? bolge.getId() : null,
-                bolge != null ? bolge.getBolgeAdi() : null,
+                birincilId,
+                bolgeAdi.isBlank() ? null : bolgeAdi,
+                bolgeIds,
                 kullanici.getAktifMi(),
                 kullanici.getEposta(),
                 kullanici.getTelefon(),
@@ -220,7 +258,11 @@ public class KullaniciService {
     }
 
     private ProfilResponseDTO toProfilDto(Kullanici kullanici) {
-        Bolge bolge = kullanici.getBolge();
+        List<Bolge> bolgeler = siraliBolgeler(kullanici);
+        List<Long> bolgeIds = bolgeler.stream().map(Bolge::getId).toList();
+        String bolgeAdi = bolgeler.stream().map(Bolge::getBolgeAdi).collect(Collectors.joining(", "));
+        Long birincilId = bolgeIds.isEmpty() ? null : bolgeIds.getFirst();
+
         var sonGiris = islemLogRepository
                 .findFirstByKullaniciIdAndIslemTipiOrderByIslemZamaniDesc(kullanici.getId(), "GIRIS")
                 .map(IslemLog::getIslemZamani)
@@ -231,13 +273,27 @@ public class KullaniciService {
                 kullanici.getKullaniciAdi(),
                 kullanici.getAdSoyad(),
                 kullanici.getRol().name(),
-                bolge != null ? bolge.getId() : null,
-                bolge != null ? bolge.getBolgeAdi() : null,
+                birincilId,
+                bolgeAdi.isBlank() ? null : bolgeAdi,
+                bolgeIds,
                 kullanici.getAktifMi(),
                 kullanici.getEposta(),
                 kullanici.getTelefon(),
                 kullanici.getGorev(),
                 sonGiris
         );
+    }
+
+    private static List<Bolge> siraliBolgeler(Kullanici kullanici) {
+        LinkedHashSet<Bolge> set = new LinkedHashSet<>();
+        if (kullanici.getBolgeler() != null) {
+            kullanici.getBolgeler().stream()
+                    .sorted(Comparator.comparing(Bolge::getId))
+                    .forEach(set::add);
+        }
+        if (kullanici.getBolge() != null) {
+            set.add(kullanici.getBolge());
+        }
+        return new ArrayList<>(set);
     }
 }

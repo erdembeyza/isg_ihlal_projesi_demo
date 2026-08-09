@@ -4,7 +4,7 @@ import { IhlalService } from '../../../core/services/ihlal.service';
 import { Ihlal, durumEtiketi, ihlalAcikSureMetni } from '../../../core/models/ihlal.model';
 import { AuthImgDirective } from '../../../core/directives/auth-img.directive';
 
-type SiralamaAlani = 'tespitZamani' | 'bolgeAdi' | 'ihlalTipiAdi' | 'personelAdi';
+type SiralamaAlani = 'tespitZamani' | 'bolgeAdi' | 'ihlalTipiAdi';
 
 const SAYFA_BOYUTU = 8;
 

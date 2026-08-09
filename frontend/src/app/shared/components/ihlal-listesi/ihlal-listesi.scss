@@ -117,28 +117,6 @@
   }
 }
 
-.personel-hucre {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  white-space: normal;
-  min-width: 110px;
-
-  .personel-adi {
-    font-weight: 600;
-    color: #0f2740;
-  }
-
-  .sicil {
-    font-size: 0.75rem;
-    color: #6b7785;
-  }
-}
-
-.atanmamis {
-  color: #9aa5b1;
-}
-
 .sayfalama {
   display: flex;
   align-items: center;
