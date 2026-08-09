@@ -36,16 +36,6 @@ export interface IhlalIstatistik {
   yuzdeDegisim: number;
 }
 
-/** Backend: PersonelIstatistikDTO */
-export interface PersonelIstatistik {
-  personelId: number;
-  personelAdi: string;
-  sicilNo: string;
-  departman: string | null;
-  toplamIhlal: number;
-  enCokIhlalKategorisi: string;
-}
-
 /** Backend: KameraDurumDTO */
 export interface KameraDurum {
   id: number;

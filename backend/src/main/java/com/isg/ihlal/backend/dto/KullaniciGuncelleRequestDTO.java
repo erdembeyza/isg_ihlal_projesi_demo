@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 public record KullaniciGuncelleRequestDTO(
 
         @NotBlank(message = "kullaniciAdi zorunludur")
@@ -19,6 +21,8 @@ public record KullaniciGuncelleRequestDTO(
         Rol rol,
 
         Long bolgeId,
+
+        List<Long> bolgeIds,
 
         @NotNull(message = "aktifMi zorunludur")
         Boolean aktifMi,

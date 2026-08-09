@@ -41,7 +41,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -110,7 +109,7 @@ public class IhlalService {
 
     public List<IhlalResponseDTO> listele(AuthenticatedUser user) {
         List<Ihlal> ihlaller = isFormen(user)
-                ? ihlalRepository.findByBolgeId(user.bolgeId())
+                ? ihlalRepository.findByBolgeIdIn(user.erisilebilirBolgeIds())
                 : ihlalRepository.findAll();
 
         return ihlaller.stream()
@@ -220,7 +219,7 @@ public class IhlalService {
 
     public List<IhlalIstatistikDTO> istatistik(AuthenticatedUser user) {
         List<Ihlal> kapsam = isFormen(user)
-                ? ihlalRepository.findByBolgeIdAndDurum(user.bolgeId(), IhlalDurumu.AKTIF)
+                ? ihlalRepository.findByBolgeIdInAndDurum(user.erisilebilirBolgeIds(), IhlalDurumu.AKTIF)
                 : ihlalRepository.findByDurum(IhlalDurumu.AKTIF);
 
         LocalDateTime simdi = LocalDateTime.now();
@@ -251,7 +250,7 @@ public class IhlalService {
 
     public List<PersonelIstatistikDTO> personelIstatistik(AuthenticatedUser user) {
         List<Ihlal> kapsam = isFormen(user)
-                ? ihlalRepository.findByBolgeId(user.bolgeId())
+                ? ihlalRepository.findByBolgeIdIn(user.erisilebilirBolgeIds())
                 : ihlalRepository.findAll();
 
         Map<Long, List<Ihlal>> personelGruplari = kapsam.stream()
@@ -289,7 +288,8 @@ public class IhlalService {
         LocalDateTime baslangic8Hafta = LocalDate.now().minusWeeks(7).atStartOfDay();
 
         List<Ihlal> kapsam = isFormen(user)
-                ? ihlalRepository.findByBolgeIdAndTespitZamaniBetween(user.bolgeId(), baslangic8Hafta, simdi)
+                ? ihlalRepository.findByBolgeIdInAndTespitZamaniBetween(
+                        user.erisilebilirBolgeIds(), baslangic8Hafta, simdi)
                 : ihlalRepository.findByTespitZamaniBetween(baslangic8Hafta, simdi);
 
         int toplam = kapsam.size();
@@ -346,7 +346,7 @@ public class IhlalService {
     }
 
     private void bolgeErisimKontrol(Ihlal ihlal, AuthenticatedUser user) {
-        if (isFormen(user) && !Objects.equals(ihlal.getBolge().getId(), user.bolgeId())) {
+        if (isFormen(user) && !user.bolgeyeErisebilir(ihlal.getBolge().getId())) {
             throw new AccessDeniedException("Bu bolgeye ait ihlal kaydina erisim yetkiniz yok");
         }
     }

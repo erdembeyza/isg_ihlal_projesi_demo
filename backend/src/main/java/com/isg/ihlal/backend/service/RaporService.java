@@ -49,7 +49,7 @@ public class RaporService {
                 .atTime(LocalTime.MAX);
 
         List<Ihlal> kayitlar = isFormen(user)
-                ? ihlalRepository.findByBolgeIdAndTespitZamaniBetween(user.bolgeId(), bas, bit)
+                ? ihlalRepository.findByBolgeIdInAndTespitZamaniBetween(user.erisilebilirBolgeIds(), bas, bit)
                 : ihlalRepository.findByTespitZamaniBetween(bas, bit);
 
         int aktif = (int) kayitlar.stream().filter(i -> i.getDurum() == IhlalDurumu.AKTIF).count();

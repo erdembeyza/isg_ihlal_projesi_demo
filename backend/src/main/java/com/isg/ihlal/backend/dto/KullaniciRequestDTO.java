@@ -5,10 +5,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 /**
- * POST /api/kullanicilar istegi. Sadece ISG_YONETICI tarafindan cagrilir
- * (bkz. KullaniciController). bolgeId yalnizca rol=FORMEN icin anlamlidir;
- * ISG_YONETICI olusturulurken null birakilmalidir.
+ * POST /api/kullanicilar istegi. bolgeId veya bolgeIds yalnizca rol=FORMEN icin anlamlidir.
  */
 public record KullaniciRequestDTO(
 
@@ -27,6 +27,8 @@ public record KullaniciRequestDTO(
         @NotNull(message = "rol zorunludur")
         Rol rol,
 
-        Long bolgeId
+        Long bolgeId,
+
+        List<Long> bolgeIds
 ) {
 }
