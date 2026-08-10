@@ -1,0 +1,73 @@
+@if (!rapor()) {
+  <p class="bos">Haftalık özet yükleniyor…</p>
+} @else {
+  <div class="ozet-grid">
+    <div class="sutun">
+      <h3>En çok ihlal olan bölgeler</h3>
+      @if (enRiskliBolge(); as b) {
+        <p class="vurgu">
+          Lider bölge: <strong>{{ b.bolgeAdi }}</strong> ({{ b.adet }})
+        </p>
+      }
+      @if (bolgeler().length === 0) {
+        <p class="bos">Kayıt yok.</p>
+      } @else {
+        <ul>
+          @for (b of bolgeler(); track b.bolgeAdi) {
+            <li>
+              <div class="satir">
+                <span>{{ b.bolgeAdi }}</span>
+                <strong>{{ b.adet }}</strong>
+              </div>
+              <div class="bar-iz">
+                <div class="bar-dolgu bolge" [style.width.%]="yuzde(b.adet, maxBolge())"></div>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="sutun">
+      <h3>İhlal tipi dağılımı</h3>
+      @if (tipler().length === 0) {
+        <p class="bos">Kayıt yok.</p>
+      } @else {
+        <ul>
+          @for (t of tipler(); track t.tipAdi) {
+            <li class="tip-satir">
+              <span class="rozet">{{ t.tipAdi }}</span>
+              <strong>{{ t.adet }}</strong>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="sutun">
+      <h3>En riskli saatler</h3>
+      @if (enRiskliSaat(); as s) {
+        <p class="vurgu">
+          En yoğun saat: <strong>{{ saatEtiket(s.saat) }}</strong> ({{ s.adet }} ihlal)
+        </p>
+      }
+      @if (saatler().length === 0) {
+        <p class="bos">Kayıt yok.</p>
+      } @else {
+        <ul>
+          @for (s of saatler(); track s.saat) {
+            <li>
+              <div class="satir">
+                <span>{{ saatEtiket(s.saat) }}</span>
+                <strong>{{ s.adet }}</strong>
+              </div>
+              <div class="bar-iz">
+                <div class="bar-dolgu saat" [style.width.%]="yuzde(s.adet, maxSaat())"></div>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </div>
+}

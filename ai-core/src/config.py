@@ -83,6 +83,10 @@ class Ayarlar:
     kamera_adi: str = ""
     ihlal_min_sure_saniye: float = 8.0
     heartbeat_saniye: float = 5.0
+    face_recognition_enabled: bool = True
+    face_cosine_esik: float = 0.363
+    face_galeri_yenile_saniye: float = 120.0
+    face_gallery_dir: Path = Path("face_gallery")
 
     @property
     def auth_login_url(self) -> str:
@@ -95,6 +99,10 @@ class Ayarlar:
     @property
     def kamera_heartbeat_url(self) -> str:
         return f"{self.backend_base_url.rstrip('/')}/api/kameralar/heartbeat"
+
+    @property
+    def models_dir(self) -> Path:
+        return self.yolo_model_yolu.parent
 
     def ihlal_tipi_id(self, ihlal_tipi_adi: str) -> int:
         eslestirme = {
@@ -150,6 +158,10 @@ def ayarlari_yukle() -> Ayarlar:
         kamera_adi=os.getenv("KAMERA_ADI", "").strip(),
         ihlal_min_sure_saniye=max(1.0, _float_oku("IHLAL_MIN_SURE_SANIYE", 8.0)),
         heartbeat_saniye=max(2.0, _float_oku("HEARTBEAT_SANIYE", 5.0)),
+        face_recognition_enabled=_bool_oku("FACE_RECOGNITION_ENABLED", True),
+        face_cosine_esik=_float_oku("FACE_COSINE_ESIK", 0.363),
+        face_galeri_yenile_saniye=max(30.0, _float_oku("FACE_GALERI_YENILE_SANIYE", 120.0)),
+        face_gallery_dir=_yol_coz(os.getenv("FACE_GALLERY_DIR", "face_gallery")),
     )
 
 

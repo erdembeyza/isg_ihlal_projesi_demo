@@ -7,11 +7,13 @@ import { IhlalService } from '../../core/services/ihlal.service';
 import {
   Ihlal,
   IhlalIstatistik,
+  PersonelIstatistik,
   durumEtiketi,
 } from '../../core/models/ihlal.model';
 import { IhlalListesiComponent } from '../../shared/components/ihlal-listesi/ihlal-listesi';
 import { IstatistikGrafikComponent } from '../../shared/components/istatistik-grafik/istatistik-grafik';
 import { IhlalDetayModalComponent } from '../../shared/components/ihlal-detay-modal/ihlal-detay-modal';
+import { PersonelIstatistikPaneliComponent } from '../../shared/components/personel-istatistik-paneli/personel-istatistik-paneli';
 import { PanelShell } from '../../shared/layout/panel-shell/panel-shell';
 
 const TUMU = 'TÜMÜ';
@@ -61,7 +63,13 @@ function yuksekFirinKisaAd(bolgeAdi: string): string | null {
 @Component({
   selector: 'app-foreman-dashboard',
   standalone: true,
-  imports: [IhlalListesiComponent, IstatistikGrafikComponent, IhlalDetayModalComponent, PanelShell],
+  imports: [
+    IhlalListesiComponent,
+    IstatistikGrafikComponent,
+    IhlalDetayModalComponent,
+    PersonelIstatistikPaneliComponent,
+    PanelShell,
+  ],
   templateUrl: './foreman-dashboard.html',
   styleUrl: './foreman-dashboard.scss',
 })
@@ -74,6 +82,7 @@ export class ForemanDashboard {
 
   protected readonly ihlaller = signal<Ihlal[]>([]);
   protected readonly istatistikler = signal<IhlalIstatistik[]>([]);
+  protected readonly personelIstatistikleri = signal<PersonelIstatistik[]>([]);
   protected readonly yukleniyor = signal(true);
   protected readonly hataMesaji = signal<string | null>(null);
   protected readonly cozuluyorId = signal<number | null>(null);
@@ -227,6 +236,9 @@ export class ForemanDashboard {
     });
 
     this.ihlalService.istatistik().subscribe({ next: (veri) => this.istatistikler.set(veri) });
+    this.ihlalService.personelIstatistik().subscribe({
+      next: (v) => this.personelIstatistikleri.set(v),
+    });
   }
 
   tipFiltresiDegisti(tip: string): void {
@@ -273,6 +285,9 @@ export class ForemanDashboard {
         }
         this.cozuluyorId.set(null);
         this.ihlalService.istatistik().subscribe({ next: (veri) => this.istatistikler.set(veri) });
+        this.ihlalService.personelIstatistik().subscribe({
+          next: (v) => this.personelIstatistikleri.set(v),
+        });
       },
       error: () => {
         this.cozuluyorId.set(null);

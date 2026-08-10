@@ -29,15 +29,18 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 public class FileStorageService {
 
     private static final String ALT_KLASOR = "ihlaller";
+    private static final String PERSONEL_YUZ_KLASOR = "personel-yuzleri";
     private static final String FINETUNE_HAVUZ = "finetune-havuz";
 
     private final Path uploadKok;
     private final Path kokDizin;
+    private final Path personelYuzDizin;
     private final Path finetuneHavuz;
 
     public FileStorageService(@Value("${app.upload-dir}") String uploadDir) {
         this.uploadKok = Paths.get(uploadDir).toAbsolutePath().normalize();
         this.kokDizin = uploadKok.resolve(ALT_KLASOR).normalize();
+        this.personelYuzDizin = uploadKok.resolve(PERSONEL_YUZ_KLASOR).normalize();
         this.finetuneHavuz = uploadKok.resolve(FINETUNE_HAVUZ).normalize();
     }
 
@@ -45,6 +48,7 @@ public class FileStorageService {
     public void klasoruHazirla() {
         try {
             Files.createDirectories(kokDizin);
+            Files.createDirectories(personelYuzDizin);
             Files.createDirectories(finetuneHavuz);
         } catch (IOException e) {
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Yukleme klasoru olusturulamadi", e);
@@ -110,6 +114,47 @@ public class FileStorageService {
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Foto diske yazilamadi", e);
         }
         return "/uploads/" + ALT_KLASOR + "/" + dosyaAdi;
+    }
+
+    /** Personel referans yuz fotografini kaydeder; URL doner. */
+    public String personelYuzuKaydet(String base64Icerik, Long personelId) {
+        String dosyaAdi = "p" + personelId + "_" + UUID.randomUUID() + ".jpg";
+        Path hedefYol = personelYuzDizin.resolve(dosyaAdi);
+        try {
+            Files.write(hedefYol, base64Coz(base64Icerik));
+        } catch (IOException e) {
+            throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Personel yuz fotosu yazilamadi", e);
+        }
+        return "/uploads/" + PERSONEL_YUZ_KLASOR + "/" + dosyaAdi;
+    }
+
+    /** Upload URL'inden dosyayi base64 olarak okur (AI galeri icin). */
+    public String fotoBase64Oku(String fotoUrl) {
+        Path yol = urlDenDosyaYolu(fotoUrl);
+        if (!Files.isRegularFile(yol)) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.NOT_FOUND,
+                    "Foto bulunamadi: " + fotoUrl
+            );
+        }
+        try {
+            return Base64.getEncoder().encodeToString(Files.readAllBytes(yol));
+        } catch (IOException e) {
+            throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Foto okunamadi", e);
+        }
+    }
+
+    /** Personel yuz dosyasini siler (yoksa sessizce gecer). */
+    public void fotoSil(String fotoUrl) {
+        if (!StringUtils.hasText(fotoUrl)) {
+            return;
+        }
+        Path yol = urlDenDosyaYolu(fotoUrl);
+        try {
+            Files.deleteIfExists(yol);
+        } catch (IOException e) {
+            throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Foto silinemedi", e);
+        }
     }
 
     /**

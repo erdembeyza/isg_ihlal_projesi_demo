@@ -12,6 +12,7 @@ import {
   IslemLog,
   KaliteIstatistik,
   KameraDurum,
+  PersonelIstatistik,
 } from '../../core/models/ihlal.model';
 import { IhlalListesiComponent } from '../../shared/components/ihlal-listesi/ihlal-listesi';
 import { IstatistikGrafikComponent } from '../../shared/components/istatistik-grafik/istatistik-grafik';
@@ -19,6 +20,8 @@ import { IhlalDetayModalComponent } from '../../shared/components/ihlal-detay-mo
 import { KameraDurumPaneliComponent } from '../../shared/components/kamera-durum-paneli/kamera-durum-paneli';
 import { DenetimGunluguComponent } from '../../shared/components/denetim-gunlugu/denetim-gunlugu';
 import { KaliteGrafikComponent } from '../../shared/components/kalite-grafik/kalite-grafik';
+import { PersonelIstatistikPaneliComponent } from '../../shared/components/personel-istatistik-paneli/personel-istatistik-paneli';
+import { BolgeSaatOzetPaneliComponent } from '../../shared/components/bolge-saat-ozet-paneli/bolge-saat-ozet-paneli';
 import { PanelShell } from '../../shared/layout/panel-shell/panel-shell';
 
 const TUMU = 'TÜMÜ';
@@ -34,6 +37,8 @@ const CANLI_YENILEME_MS = 3000;
     KameraDurumPaneliComponent,
     DenetimGunluguComponent,
     KaliteGrafikComponent,
+    PersonelIstatistikPaneliComponent,
+    BolgeSaatOzetPaneliComponent,
     PanelShell,
   ],
   templateUrl: './admin-dashboard.html',
@@ -50,6 +55,7 @@ export class AdminDashboard {
 
   protected readonly ihlaller = signal<Ihlal[]>([]);
   protected readonly istatistikler = signal<import('../../core/models/ihlal.model').IhlalIstatistik[]>([]);
+  protected readonly personelIstatistikleri = signal<PersonelIstatistik[]>([]);
   protected readonly bolgeler = signal<Bolge[]>([]);
   protected readonly kameralar = signal<KameraDurum[]>([]);
   protected readonly loglar = signal<IslemLog[]>([]);
@@ -121,6 +127,7 @@ export class AdminDashboard {
     });
 
     this.ihlalService.istatistik().subscribe({ next: (veri) => this.istatistikler.set(veri) });
+    this.ihlalService.personelIstatistik().subscribe({ next: (v) => this.personelIstatistikleri.set(v) });
     this.ihlalService.kameraDurumlari().subscribe({ next: (k) => this.kameralar.set(k) });
     this.ihlalService.islemLoglari(80).subscribe({ next: (l) => this.loglar.set(l) });
     this.ihlalService.kaliteIstatistik().subscribe({ next: (k) => this.kalite.set(k) });

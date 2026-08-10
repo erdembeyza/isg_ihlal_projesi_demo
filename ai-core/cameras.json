@@ -7,7 +7,7 @@
   {
     "name": "1. Sicak Haddehane kamerasi",
     "bolge_id": 2,
-    "video_source": "http://192.168.0.21:8080/video"
+    "video_source": "http://10.213.165.76:8080/video"
   },
   {
     "name": "1. Soguk Haddehane kamerasi",

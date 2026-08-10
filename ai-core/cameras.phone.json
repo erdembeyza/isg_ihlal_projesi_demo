@@ -2,6 +2,6 @@
   {
     "name": "1. Sicak Haddehane kamerasi",
     "bolge_id": 2,
-    "video_source": "http://172.16.64.45:8080/video"
+    "video_source": "http://10.213.165.76:8080/video"
   }
 ]

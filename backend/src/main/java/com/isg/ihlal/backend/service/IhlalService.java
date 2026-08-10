@@ -261,19 +261,21 @@ public class IhlalService {
         return personelGruplari.values().stream()
                 .map(liste -> {
                     Personel personel = liste.getFirst().getPersonel();
-                    String enCokKategori = liste.stream()
-                            .collect(Collectors.groupingBy(i -> i.getIhlalTipi().getTipAdi(), Collectors.counting()))
-                            .entrySet().stream()
-                            .max(Map.Entry.comparingByValue())
-                            .map(Map.Entry::getKey)
-                            .orElse("-");
+                    Map<String, Long> tipSayim = liste.stream()
+                            .collect(Collectors.groupingBy(i -> i.getIhlalTipi().getTipAdi(), Collectors.counting()));
+                    List<PersonelIstatistikDTO.TipAdet> tipDagilimi = tipSayim.entrySet().stream()
+                            .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                            .map(e -> new PersonelIstatistikDTO.TipAdet(e.getKey(), e.getValue().intValue()))
+                            .toList();
+                    String enCokKategori = tipDagilimi.isEmpty() ? "-" : tipDagilimi.getFirst().tipAdi();
                     return new PersonelIstatistikDTO(
                             personel.getId(),
                             personel.getAdSoyad(),
                             personel.getSicilNo(),
                             personel.getDepartman(),
                             liste.size(),
-                            enCokKategori
+                            enCokKategori,
+                            tipDagilimi
                     );
                 })
                 .sorted(Comparator.comparingInt(PersonelIstatistikDTO::toplamIhlal).reversed())

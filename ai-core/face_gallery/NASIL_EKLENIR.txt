@@ -1,0 +1,22 @@
+﻿YUZ GALERISI NASIL KULLANILIR
+=============================
+
+1) Her kisi icin AYRI bir klasor ac.
+2) Klasor adi formati: SICIL_Ad_Soyad
+   Ornek: P-1001_Ahmet_Yilmaz
+3) O klasore 1-3 (en fazla 5) net, ONDEN yuz fotografi koy.
+   Dosya adi onemli degil: 1.jpg, 2.jpg, selfie.png ...
+4) Desteklenen uzantilar: .jpg .jpeg .png .bmp .webp
+5) AI Core'u yeniden baslat (veya ~2 dk bekle); galeri otomatik yuklenir.
+
+Ornek yapi:
+  face_gallery/
+    P-1001_Ahmet_Yilmaz/
+      1.jpg
+      2.jpg
+    P-1002_Mehmet_Demir/
+      1.jpg
+
+Not: Fotograflar Git'e gitmez (.gitignore). Yerelde tutman yeterli.
+Ihlal kaydinda personel gorunsun istiyorsan ayni sicil no
+veritabanindaki personeller tablosunda da olmali (or. P-1001).

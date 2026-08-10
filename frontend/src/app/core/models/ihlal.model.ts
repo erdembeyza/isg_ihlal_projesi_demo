@@ -76,6 +76,17 @@ export interface HaftalikKaliteNoktasi {
   fpOrani: number;
 }
 
+/** Backend: PersonelIstatistikDTO */
+export interface PersonelIstatistik {
+  personelId: number;
+  personelAdi: string;
+  sicilNo: string;
+  departman: string | null;
+  toplamIhlal: number;
+  enCokIhlalKategorisi: string;
+  tipDagilimi: { tipAdi: string; adet: number }[];
+}
+
 /** Backend: HaftalikRaporOzetDTO */
 export interface HaftalikRaporOzet {
   baslangic: string;

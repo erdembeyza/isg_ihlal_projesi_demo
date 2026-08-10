@@ -19,6 +19,7 @@
             }
           </th>
           <th>Açık süre</th>
+          <th>Personel</th>
           <th (click)="siralaAlaninaGore('tespitZamani')" class="siralanabilir">
             Tespit Zamanı
             @if (siralamaAlani() === 'tespitZamani') {
@@ -37,6 +38,14 @@
             <td>{{ ihlal.bolgeAdi }}</td>
             <td>{{ ihlal.ihlalTipiAdi }}</td>
             <td>{{ acikSure(ihlal) }}</td>
+            <td>
+              @if (ihlal.personelAdi) {
+                {{ ihlal.personelAdi }}
+                <small class="sicil">{{ ihlal.personelSicilNo }}</small>
+              } @else {
+                —
+              }
+            </td>
             <td>{{ ihlal.tespitZamani | date: 'dd.MM.yyyy HH:mm' }}</td>
             <td>
               <div class="durum-hucre">

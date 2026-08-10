@@ -44,16 +44,14 @@
         <div><span>Çözüldü</span><strong>{{ rapor.cozuldu }}</strong></div>
         <div><span>Hatalı tespit</span><strong>{{ rapor.hataliTespit }}</strong></div>
       </div>
-      @if (rapor.riskliSaatler.length) {
-      <p class="risk-saat">
-        En riskli saatler:
-        @for (s of rapor.riskliSaatler.slice(0, 5); track s.saat; let last = $last) {
-          <strong>{{ ('0' + s.saat).slice(-2) }}:00 ({{ s.adet }})</strong>@if (!last) {, }
-        }
-      </p>
-      }
+      <app-bolge-saat-ozet-paneli [rapor]="rapor" />
     </section>
     }
+
+    <section class="kart">
+      <h2>En Çok İhlal Yapan Personeller</h2>
+      <app-personel-istatistik-paneli [kayitlar]="personelIstatistikleri()" />
+    </section>
 
     <section class="kart">
       <h2>İhlal İstatistikleri</h2>

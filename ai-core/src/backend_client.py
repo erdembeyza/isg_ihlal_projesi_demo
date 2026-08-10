@@ -46,6 +46,8 @@ class BackendIstemcisi:
         tespit_zamani: datetime | None = None,
         bolge_id: int | None = None,
         sure_saniye: int | None = None,
+        personel_id: int | None = None,
+        personel_sicil_no: str | None = None,
     ) -> dict:
         """Bir ihlali backend'e POST eder; olusturulan IhlalResponseDTO'yu (dict) doner."""
         istek_govdesi: dict = {
@@ -56,6 +58,10 @@ class BackendIstemcisi:
         }
         if sure_saniye is not None:
             istek_govdesi["sureSaniye"] = sure_saniye
+        if personel_id is not None:
+            istek_govdesi["personelId"] = int(personel_id)
+        if personel_sicil_no:
+            istek_govdesi["personelSicilNo"] = personel_sicil_no
 
         for deneme in (1, 2):
             try:

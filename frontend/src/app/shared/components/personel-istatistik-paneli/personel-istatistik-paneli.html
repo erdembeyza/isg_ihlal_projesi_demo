@@ -1,0 +1,32 @@
+@if (gorunen().length === 0) {
+  <p class="bos">Henüz personel eşleşmeli ihlal kaydı yok. Yüz tanıma ile eşleşen ihlaller burada listelenir.</p>
+} @else {
+  @if (enCok(); as lider) {
+    <p class="ozet">
+      En çok ihlal:
+      <strong>{{ lider.personelAdi }}</strong>
+      ({{ lider.sicilNo }}) —
+      <strong>{{ lider.toplamIhlal }}</strong> kayıt,
+      en sık: <strong>{{ lider.enCokIhlalKategorisi }}</strong>
+    </p>
+  }
+
+  <ol class="sirala">
+    @for (k of gorunen(); track k.personelId; let i = $index) {
+      <li [class.lider]="i === 0">
+        <div class="ust">
+          <span class="sira">{{ i + 1 }}</span>
+          <div class="kim">
+            <strong>{{ k.personelAdi }}</strong>
+            <span class="meta">{{ k.sicilNo }}@if (k.departman) { · {{ k.departman }} }</span>
+          </div>
+          <span class="adet">{{ k.toplamIhlal }}</span>
+        </div>
+        <div class="bar-iz" aria-hidden="true">
+          <div class="bar-dolgu" [style.width.%]="yuzde(k.toplamIhlal)"></div>
+        </div>
+        <p class="tipler">{{ tipOzeti(k) }}</p>
+      </li>
+    }
+  </ol>
+}

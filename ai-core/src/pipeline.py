@@ -18,7 +18,7 @@ import numpy as np
 
 from .backend_client import BackendIstemcisi
 from .config import Ayarlar
-from .face_blur import yuzleri_blurla
+from .face_recognizer import TaninanKisi, YuzTanima
 from .ppe_detector import Ihlal, PpeDedektoru, kisi_cizim_kutusunu_genislet
 from .stream import akisi_surdur, canli_akismi
 from .tracker import IoUTracker, kutu_iou
@@ -103,6 +103,12 @@ class IhlalPipeline:
         self._fps_kare_sayaci = 0
         self._fps_pencere_baslangic = time.monotonic()
         self._son_fps = 0.0
+        self._yuz_tanima = YuzTanima(
+            ayarlar.models_dir,
+            cosine_esik=ayarlar.face_cosine_esik,
+            etkin=ayarlar.face_recognition_enabled,
+        )
+        self._son_galeri_yenileme = 0.0
 
     @property
     def bildirim_sayaci(self) -> int:
@@ -114,9 +120,11 @@ class IhlalPipeline:
         dongu_dosya = (not canli) and dongu
         etiket = self._ayarlar.kamera_adi or f"bolge-{self._ayarlar.bolge_id}"
 
+        self._galeriyi_yenile(zorla=True)
+
         logger.info(
             "[%s] Kaynak baslatiliyor: %s (canli=%s, demo_modu=%s, kuru=%s, "
-            "bolge_id=%s, min_sure=%.0fs)",
+            "bolge_id=%s, min_sure=%.0fs, kisi_tanima=%s)",
             etiket,
             video_kaynagi,
             canli,
@@ -124,6 +132,7 @@ class IhlalPipeline:
             self._kuru_calistirma,
             self._ayarlar.bolge_id,
             self._ayarlar.ihlal_min_sure_saniye,
+            self._yuz_tanima.hazir_mi,
         )
 
         try:
@@ -200,9 +209,27 @@ class IhlalPipeline:
             self._fps_kare_sayaci = 0
             self._fps_pencere_baslangic = time.monotonic()
 
+    def _galeriyi_yenile(self, *, zorla: bool = False) -> None:
+        """face_gallery/ klasorunden yuz galerisini yukler (periyodik)."""
+        if not self._yuz_tanima.hazir_mi:
+            return
+        simdi = time.monotonic()
+        if (
+            not zorla
+            and self._son_galeri_yenileme > 0
+            and simdi - self._son_galeri_yenileme < self._ayarlar.face_galeri_yenile_saniye
+        ):
+            return
+        self._son_galeri_yenileme = simdi
+        try:
+            self._yuz_tanima.klasorden_yukle(self._ayarlar.face_gallery_dir)
+        except Exception:
+            logger.debug("Yuz galerisi yenilenemedi", exc_info=True)
+
     def _heartbeat_gonder(self) -> None:
         if self._kuru_calistirma or self._backend is None:
             return
+        self._galeriyi_yenile(zorla=False)
         simdi = time.monotonic()
         if simdi - self._son_heartbeat < self._ayarlar.heartbeat_saniye:
             return
@@ -291,27 +318,41 @@ class IhlalPipeline:
             ),
         )
 
+    def _kisiyi_tani(self, kare: np.ndarray, kisi_kutusu: tuple[int, int, int, int]) -> TaninanKisi | None:
+        """Blur ONCESI kisi tanima — galeri bos/kapaliysa None."""
+        if not self._yuz_tanima.hazir_mi:
+            return None
+        try:
+            return self._yuz_tanima.tani(kare, kisi_kutusu)
+        except Exception:
+            logger.debug("Kisi tanima hatasi", exc_info=True)
+            return None
+
     def _ihlali_bildir(self, kare: np.ndarray, ihlal: Ihlal, sure_saniye: int) -> None:
         tespit_zamani = datetime.now()
-        # Yuz blur: yalnizca bu karedeki YOLO kisi kutulari.
-        kisi_kutulari = self._dedektor.kisi_kutularini_bul(kare)
-        if not kisi_kutulari:
-            kisi_kutulari = [ihlal.kisi_kutusu]
-        elif not any(kutu_iou(ihlal.kisi_kutusu, k) >= 0.08 for k in kisi_kutulari):
-            kisi_kutulari = [*kisi_kutulari, ihlal.kisi_kutusu]
-        kanit_kare = yuzleri_blurla(kare, kisi_kutulari)
-        # Kirmizi cerceve: ihlal sahibi kisinin guncel kutusu.
-        kanit_kare = self._ihlal_kutusunu_ciz(kanit_kare, ihlal)
+        # Kisi tanima (kanit fotosu bozulmadan once).
+        taninan = self._kisiyi_tani(kare, ihlal.kisi_kutusu)
+        if taninan is not None:
+            logger.info(
+                "Kisi tanindi: %s (%s) skor=%.3f",
+                taninan.ad_soyad,
+                taninan.sicil_no,
+                taninan.skor,
+            )
+
+        # Kanit: yuz blur YOK — tanima/kimlik icin net foto saklanir.
+        kanit_kare = self._ihlal_kutusunu_ciz(kare, ihlal)
 
         if self._kuru_calistirma:
             self._bildirim_sayaci += 1
             logger.info(
                 "[KURU CALISTIRMA] Ihlal: tip=%s guven=%.2f sure=%ss kutu=%s "
-                "(backend'e GONDERILMEDI)",
+                "personel=%s (backend'e GONDERILMEDI)",
                 ihlal.ihlal_tipi_adi,
                 ihlal.guven,
                 sure_saniye,
                 ihlal.kutu_cizim_icin(),
+                taninan.ad_soyad if taninan else "-",
             )
             if self._debug_cikti_klasoru is not None:
                 self._debug_ciktisini_kaydet(kanit_kare, ihlal, tespit_zamani)
@@ -324,17 +365,19 @@ class IhlalPipeline:
                 tespit_zamani,
                 bolge_id=self._ayarlar.bolge_id,
                 sure_saniye=sure_saniye,
+                personel_id=taninan.personel_id if taninan and taninan.personel_id else None,
+                personel_sicil_no=taninan.sicil_no if taninan else None,
             )
             self._bildirim_sayaci += 1
             logger.info(
                 "Ihlal backend'e bildirildi: id=%s tip=%s guven=%.2f sure=%ss "
-                "bolge_id=%s bolge_kaynak=%s kamera=%s",
+                "bolge_id=%s personel=%s kamera=%s",
                 sonuc.get("id"),
                 ihlal.ihlal_tipi_adi,
                 ihlal.guven,
                 sure_saniye,
                 self._ayarlar.bolge_id,
-                self._ayarlar.video_kaynagi,
+                taninan.ad_soyad if taninan else "-",
                 self._ayarlar.kamera_adi or "-",
             )
         except Exception:

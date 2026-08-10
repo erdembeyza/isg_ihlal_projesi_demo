@@ -11,6 +11,7 @@ import {
   IslemLog,
   KaliteIstatistik,
   KameraDurum,
+  PersonelIstatistik,
 } from '../models/ihlal.model';
 
 @Injectable({ providedIn: 'root' })
@@ -29,6 +30,10 @@ export class IhlalService {
 
   istatistik(): Observable<IhlalIstatistik[]> {
     return this.http.get<IhlalIstatistik[]>(`${environment.apiUrl}/ihlaller/istatistik`);
+  }
+
+  personelIstatistik(): Observable<PersonelIstatistik[]> {
+    return this.http.get<PersonelIstatistik[]>(`${environment.apiUrl}/ihlaller/istatistik/personel`);
   }
 
   kaliteIstatistik(): Observable<KaliteIstatistik> {

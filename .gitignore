@@ -31,6 +31,8 @@ ai-core/src/__pycache__/
 ai-core/*.pyc
 ai-core/*.pt
 ai-core/models/*.pt
+ai-core/models/*.onnx
+ai-core/models/*.onnx.tmp
 
 # Test videolari, kamera ekran goruntuleri, debug kanit fotograflari
 ai-core/test_videos/*
